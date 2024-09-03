@@ -1,10 +1,12 @@
 import collections
 import dataclasses, os, sys
 import enum
+import itertools
 import uuid
 
 class Placeholders:
-    TemplateParameter = "$"
+    TemplateKey = "key"
+    TemplateParameter = "$tp"
 
 def normalize_key(k):
     k_bits = k.split("(", 1)
@@ -79,8 +81,6 @@ class ProtoMessage:
         return self.fields[field_name]
     def insert_field(self, field_name):
         key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
-        if self.has_path(key_path):
-            raise ValueError(...)
         msg = self
         if len(key_path) > 0:
             msg = msg[key_path[0]]
@@ -91,7 +91,7 @@ class ProtoMessage:
             primary = msg
         if fields is not None:
             msg.update(fields)
-        return primary
+        return msg
     def insert_tree(self, subtree):
         msg = self
         for header in subtree:
@@ -101,16 +101,18 @@ class ProtoMessage:
                 msg.insert_tree(header) # subtree
 
     def has_path(self, key_path):
-        if len(key_path) == 0:
-            return False
         key, rest = key_path[0], key_path[1:]
         if key not in self.fields:
             return False
         else:
-            if len(key_path) > 0:
-                return self.fields[key].has_path(rest)
+            subtype = self.fields[key]
+            if len(rest) > 0:
+                return subtype.has_path(rest)
             else:
-                return True
+                if isinstance(subtype, ProtoContainer) and subtype.type.container_type is not None:
+                    return False
+                else:
+                    return True
     def __getitem__(self, item):
         return self.get_field(item)
     def __setitem__(self, key, value):
@@ -124,9 +126,9 @@ class ProtoMessage:
                     self.type, proto.type
                 ))
             self.fields.update(proto.fields)
-    def to_template(self):
+    def to_template(self, key_name=None):
         return {
-            k: v.to_template() if isinstance(v, (ProtoMessage, ProtoContainer)) else v
+            k: v.to_template(key_name=k) if isinstance(v, (ProtoMessage, ProtoContainer)) else v
             for k, v in self.fields.items()
         }
 
@@ -160,11 +162,11 @@ class ProtoContainer:
             )
     def add_key(self, key):
         self.template_keys.append(key)
-        if len(self.keys) > 0:
-            if self.keys[-1] is None:
-                self.keys[-1] = Placeholders.TemplateParameter
+        if len(self.keys) > 0 and self.keys[-1] is None:
+            self.keys[-1] = Placeholders.TemplateParameter
         else:
-            self.keys.append(Placeholders.TemplateParameter)
+            msg = ProtoMessage(self.type.value_type)
+            self.add_message(Placeholders.TemplateParameter, msg)
 
     def add_message(self, data_or_key:'ProtoMessage|str', data:ProtoMessage=None, key_name=None):
         if data is None:
@@ -198,10 +200,9 @@ class ProtoContainer:
     def __getitem__(self, item):
         return self.get_field(item)
 
-    mapping_key = "key"
     def insert_field(self, field_name):
         field_name, units = normalize_key(field_name)
-        if field_name == self.mapping_key: # reserved for keys in maps
+        if field_name == Placeholders.TemplateKey: # reserved for keys in maps
             self.add_key(field_name)
             return self
         else:
@@ -217,13 +218,12 @@ class ProtoContainer:
                     msg = msg[m]
             else:
                 primary = msg
-            if units is not None:
-                unit_field = ProtoHandler.resolve_unit_message(msg, units)
-
-                msg.add_message(unit_field)
             if fields is not None:
                 msg.update(fields)
-            return primary
+            if units is not None:
+                unit_field = ProtoHandler.resolve_unit_message(msg, units)
+                msg.add_message(unit_field)
+            return msg
     def insert_tree(self, subtree):
         msg = self
         for header in subtree:
@@ -233,8 +233,13 @@ class ProtoContainer:
                 msg.insert_tree(header) # subtree
     def __setitem__(self, key, value):
         self.get_default_message().__setitem__(key, value)
-    def update(self, proto:'ProtoContainer'):
+    def update(self, proto:'ProtoContainer|ProtoMessage|dict'):
         if isinstance(proto, (ProtoMessage,dict)):
+            msg = self.get_default_message()
+            fields = proto.fields if isinstance(proto, ProtoMessage) else proto
+            if any(msg.has_path([f]) for f in fields.keys()):
+                msg = ProtoMessage(self.type.value_type)
+                self.add_message(msg)
             self.get_default_message().update(proto)
         else:
             if proto.type != self.type:
@@ -252,11 +257,11 @@ class ProtoContainer:
         for m in self.values:
             m.validate()
 
-    def to_template(self):
+    def to_template(self, key_name=None):
         if self.type.key_type is not None:
             return [
                 {
-                    "key": k,
+                    "key": k if k is not None else key_name+"-"+str(uuid.uuid4())[:6],
                     "value": v.to_template()
                 }
                 for k, v in zip(self.keys, self.values)
@@ -268,6 +273,82 @@ class ProtoContainer:
 
     def has_path(self, key_path):
         return self.get_default_message().has_path(key_path)
+
+
+class ProtoTemplater:
+    def __init__(self, template_spec):
+        self.spec = template_spec
+        self._paths = None
+    @property
+    def template_paths(self):
+        if self._paths is None:
+            self._paths = self.get_template_paths(self.spec)
+        return self._paths
+    @classmethod
+    def get_template_paths(cls, template):
+
+        if isinstance(template, dict):
+            return [
+                p
+                for k,v in template.items()
+                for p in (
+                             [[Placeholders.TemplateKey]]
+                                if k == Placeholders.TemplateParameter else
+                             []
+                         ) + [
+                        [k] + pp
+                        for pp in cls.get_template_paths(v)
+                    ]
+            ]
+        elif isinstance(template, list):
+            return [
+                [i] + p
+                for i, m in enumerate(template)
+                for p in cls.get_template_paths(m)
+            ]
+        elif template == Placeholders.TemplateParameter:
+            return [[]]
+        else:
+            return []
+
+    def apply(self, values):
+        if len(values) != len(self.template_paths):
+            raise ValueError("expected {} values got {}".format(
+                len(self.template_paths), len(values)
+            ))
+        copy_tree = self.spec.copy() # shallow copy
+        for path, val in zip(self.template_paths, values):
+            subtree = copy_tree
+            base_tree = self.spec
+            for p in path[:-1]:
+                if subtree[p] is base_tree[p]:
+                    subtree[p] = subtree[p].copy()
+                subtree = subtree[p]
+                base_tree = base_tree[p]
+            subtree[path[-1]] = val
+        return copy_tree
+
+    @classmethod
+    def format_proto(cls, proto, padding=""):
+        #TODO: use the actual proto for this
+        if isinstance(proto, dict):
+            return "\n".join(
+                (
+                    padding + k + " {\n" + cls.format_proto(p, padding=padding + "  ") + "\n"+padding+"}"
+                        if isinstance(p, dict) else
+                    "\n".join(
+                        padding + k + " {\n" + cls.format_proto(l, padding=padding + "  ") + "\n"+padding+"}"
+                        for l in p
+                        )
+                        if isinstance(p, list) else
+                    padding + k + ": " + cls.format_proto(p, padding=padding + "  ")
+                )
+                for k,p in proto.items()
+            )
+        elif isinstance(proto, list):
+            return "\n".join(cls.format_proto(p, padding=padding + "  ") for p in proto)
+        else:
+            return str(proto)
 
 class ProtoHandler:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -597,38 +678,6 @@ class PropertySpec:
         return ProtoMessage(
             ProtoType(None, ProtoHandler.parallel_proto.Reaction, None)
         )
-    @classmethod
-    def infer_reaction_data_type(cls, key) -> (str, ProtoType):
-        key, _ = normalize_key(key)
-        base_field_map = ProtoHandler.get_reaction_fields()
-        if key in base_field_map:
-            return "key"
-            # return key, {'data_type':base_field_map[key], 'fields':{}}
-
-        role_data = ProtoHandler.get_reaction_role_map().get(key, None)
-        if role_data is not None:
-            return role_data
-            # if role_data == 'outcomes':
-            #     core_data = ProtoType(None, ProtoHandler.parallel_proto.ReactionOutcome, None)
-            # else:
-            #     core_data = ProtoType(str, ProtoHandler.parallel_proto.ReactionInput, dict)
-            # return {
-            #         'data_type': core_data, #,
-            #         'fields': {
-            #             'reaction_role': key
-            #         }
-            #     }
-
-        conditions_type = ProtoHandler.get_reaction_conditions_map().get(key, None)
-        if conditions_type is not None:
-            return "conditions"
-            # return 'conditions', {
-            #     'data_type': ProtoType(None, conditions_type, list, []),
-            #     'fields': {
-            #     }
-            # }
-
-        raise ValueError("nothing matches")
 
     @classmethod
     def resolve_proto_key(cls, key, root=None):
@@ -639,41 +688,6 @@ class PropertySpec:
         else:
             new_root = getattr(root, key)
         return new_root
-
-    mapping_key = "key"
-    @classmethod
-    def resolve_proto_spec(cls, primary_key, subtree_keys, subkeys):
-        if primary_key is None:
-            primary_key = cls.infer_reaction_data_type(subtree_keys[0])
-        primary_key = normalize_key(primary_key)
-        root_type = ProtoHandler.get_field_type(ProtoHandler.parallel_proto.Reaction, primary_key)
-        subtree_keys = [normalize_key(k) for k in subtree_keys]
-        base_path = [primary_key] + subtree_keys
-        type_path = [root_type]
-        for st in subtree_keys:
-            root_type = ProtoHandler.get_field_type(root_type.value_type, st)
-            if root_type is None:
-                ...
-            else:
-                type_path.append(root_type)
-
-        template_types = []
-        template_keys = []
-        for subkey in subkeys:
-            subkey = normalize_key(subkey)
-            if root_type.key_type is str and subkey == cls.mapping_key:
-                # template_parameters.append(cls.mapping_key)
-                template_keys.append([primary_key])
-                template_types.append([root_type])
-            else:
-                types, keys = ProtoHandler.resolve_insertion_spot(root_type, subkey)
-                # template_parameters.append(cls.mapping_key)
-                template_keys.append([primary_key] + keys)
-                template_types.append(types)
-
-
-        return template_types, template_keys
-
     def parse_rows(self, block):
         block = [
             list(row) + [""] * (self.num_fields - len(row)) # pad rows if necessary
@@ -745,40 +759,26 @@ class DatasetConstructor:
 
 if __name__ == "__main__":
     rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
+    # rxn.insert_tree([
+    #     "INPUTS",
+    #     [
+    #         "key",
+    #         "REACTANT", ["INCHI", "SMILES", "Amount (gram)"],
+    #         "REACTANT", ["SMILES", "Amount (mole)"]
+    #     ]
+    # ])
     rxn.insert_tree([
-        "INPUTS",
-        [
-            "key", "REACTANT",
-                    ["INCHI", "SMILES", "Amount (gram)"]
-         ]
+        "REACTANT", ["INCHI", "SMILES", "Amount (gram)"],
+        "REACTANT", ["SMILES", "Amount (mole)"]
     ])
-    # rxn.insert_tree("REACTANT")
-    raise Exception(rxn.to_template())
+    template = ProtoTemplater(rxn.to_template())
 
-    raise Exception(
-        PropertySpec.resolve_proto_spec(None, ["Reactant"], ["Key", "INCHI", "SMILES", "Amount"])
+    print(
+        ProtoTemplater.format_proto(
+            {"reactions":template.apply(["C", "C", .25, "CC", 1.2])}
+        )
     )
-
-    raise Exception(
-        ProtoHandler.get_role_identifier_types()
-    )
-
-    type_names = ProtoHandler.get_quantity_type_map()
-    for k,v in type_names.items():
-        print("=="*5, k, "=="*5)
-        print(v)
-    raise Exception(...)
-
-    # raise Exception(
-    #     ProtoHandler.build_proto_map(ProtoHandler.parallel_proto.Compound)[0]
+    # print(
+    #     template.apply(["CHHC", "HC", .25, "OO", 1.2])
     # )
-    # print(ProtoHandler.infer_reaction_data_type(ProtoHandler.parallel_proto.Compound, 'mass'))
-    # raise Exception(...)
-    for k,v in ProtoHandler.get_proto_map().items():
-        print("=="*5, k, "=="*5)
-        if isinstance(v, dict):
-            for k2,v2 in v.items():
-                print("   ", "=="*5, k2, "=="*5)
-                print("   ", v2)
-        else:
-            print(v)
+    # print(template.spec)
