@@ -1,0 +1,682 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 13.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     27957,        674]
+NotebookOptionsPosition[     27186,        654]
+NotebookOutlinePosition[     27580,        670]
+CellTagsIndexPosition[     27537,        667]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"cleanProtoEnums", "[", "protoMessage_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringReplace", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"Shortest", "[", 
+         RowBox[{"\"\<enum \>\"", "~~", 
+          RowBox[{"tag", ":", 
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", ".."}], ")"}]}], "~~", " ", "\"\< {\>\"",
+           "~~", "__", "~~", "\"\<}\>\""}], "]"}], ":>", 
+        RowBox[{"\"\<<\>\"", "<>", "tag", "<>", "\"\<>\>\""}]}]}], 
+      "\[IndentingNewLine]", "]"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{"Shortest", "[", 
+        RowBox[{"\"\<enum \>\"", "~~", 
+         RowBox[{"WordCharacter", ".."}], "~~", " ", "\"\< {\>\"", "~~", "__",
+          "~~", "\"\<}\>\""}], "]"}]}], "\[IndentingNewLine]", "]"}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"formatOneofClass", "[", "body_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"\"\<TypeTagUnion_\>\"", "<>", 
+    RowBox[{"StringCases", "[", 
+     RowBox[{"body", ",", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"subtag", ":", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", "|", "\"\<_\>\""}], ")"}], ".."}]}], 
+         ")"}], "~~", "\"\< = \>\""}], ":>", 
+       RowBox[{"StringReplace", "[", 
+        RowBox[{"subtag", ",", "$typeMap"}], "]"}]}]}], "\[IndentingNewLine]",
+      "]"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"cleanProtoOneofs", "[", "protoMessage_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringReplace", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"Shortest", "[", 
+         RowBox[{"\"\<oneof \>\"", "~~", 
+          RowBox[{"tag", ":", 
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", ".."}], ")"}]}], "~~", " ", "\"\< {\>\"",
+           "~~", "body__", "~~", "\"\<}\>\""}], "]"}], ":>", 
+        RowBox[{
+         RowBox[{"formatOneofClass", "[", "body", "]"}], "<>", "\"\< \>\"", "<>",
+          "tag", "<>", "\"\< = 15;\\n\>\""}]}]}], "\[IndentingNewLine]", 
+      "]"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{"Shortest", "[", 
+        RowBox[{"\"\<oneof \>\"", "~~", 
+         RowBox[{"WordCharacter", ".."}], "~~", " ", "\"\< {\>\"", "~~", "__",
+          "~~", "\"\<}\>\""}], "]"}]}], "\[IndentingNewLine]", "]"}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"cleanProtoSubmessages", "[", "protoMessage_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringReplace", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"Shortest", "[", 
+         RowBox[{"\"\<message \>\"", "~~", 
+          RowBox[{"tag", ":", 
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", ".."}], ")"}]}], "~~", " ", "\"\< {\>\"",
+           "~~", "__", "~~", "\"\<}\>\""}], "]"}], ":>", 
+        RowBox[{"\"\<<\>\"", "<>", "tag", "<>", "\"\<>\>\""}]}]}], 
+      "\[IndentingNewLine]", "]"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", "\[IndentingNewLine]", 
+      RowBox[{"protoMessage", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{"Shortest", "[", 
+        RowBox[{"\"\<message \>\"", "~~", 
+         RowBox[{"WordCharacter", ".."}], "~~", " ", "\"\< {\>\"", "~~", "__",
+          "~~", "\"\<}\>\""}], "]"}]}], "\[IndentingNewLine]", "]"}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"cleanProtoBlock", "[", "messageBlock_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"With", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"enumSplits", "=", 
+       RowBox[{"cleanProtoEnums", "[", "messageBlock", "]"}]}], "}"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{"With", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"oneofSplits", "=", 
+         RowBox[{"cleanProtoOneofs", "[", 
+          RowBox[{"enumSplits", "[", 
+           RowBox[{"[", "1", "]"}], "]"}], "]"}]}], "}"}], ",", 
+       "\[IndentingNewLine]", 
+       RowBox[{"With", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{"submessageSplits", "=", 
+           RowBox[{"cleanProtoSubmessages", "[", 
+            RowBox[{"oneofSplits", "[", 
+             RowBox[{"[", "1", "]"}], "]"}], "]"}]}], "}"}], ",", 
+         "\[IndentingNewLine]", 
+         RowBox[{"Join", "[", 
+          RowBox[{"submessageSplits", ",", " ", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"enumSplits", "[", 
+              RowBox[{"[", "2", "]"}], "]"}], ",", " ", 
+             RowBox[{"oneofSplits", "[", 
+              RowBox[{"[", "2", "]"}], "]"}]}], "}"}]}], "]"}]}], 
+        "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", "]"}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"cleanProto", "[", "proto_", "]"}], ":=", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\"\<message \>\"", "<>", 
+        RowBox[{"#", "[", 
+         RowBox[{"[", "1", "]"}], "]"}]}], ",", " ", 
+       RowBox[{"#", "[", 
+        RowBox[{"[", "2", "]"}], "]"}], ",", " ", 
+       RowBox[{"#", "[", 
+        RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+       RowBox[{"#", "[", 
+        RowBox[{"[", "4", "]"}], "]"}]}], "}"}], "&"}], "/@", 
+    RowBox[{"Map", "[", "\[IndentingNewLine]", 
+     RowBox[{"cleanProtoBlock", ",", "\[IndentingNewLine]", " ", 
+      RowBox[{
+       RowBox[{"StringSplit", "[", 
+        RowBox[{
+         RowBox[{"\"\<\\n\>\"", "<>", "proto"}], ",", " ", 
+         "\"\<\\nmessage \>\""}], "]"}], "[", 
+       RowBox[{"[", 
+        RowBox[{"2", ";;"}], "]"}], "]"}]}], "\[IndentingNewLine]", "]"}]}]}],
+   ";"}]}], "Input",
+ CellChangeTimes->{{3.933793024531156*^9, 3.933793112404663*^9}, {
+   3.933793144976761*^9, 3.9337931505896807`*^9}, {3.933793240306923*^9, 
+   3.9337932416482*^9}, {3.933793273932296*^9, 3.93379329556271*^9}, {
+   3.933793945515768*^9, 3.933793976827363*^9}, {3.933794018943255*^9, 
+   3.9337942233630457`*^9}, {3.9337942735119143`*^9, 3.933794291177044*^9}, {
+   3.933794533882925*^9, 3.933794588177506*^9}, {3.9338614401865673`*^9, 
+   3.933861514297737*^9}, {3.933861945819983*^9, 3.9338620074973717`*^9}, {
+   3.9338620515078087`*^9, 3.933862109827487*^9}, {3.9338622466411543`*^9, 
+   3.933862262412429*^9}, {3.9338623106733513`*^9, 3.933862397129476*^9}, {
+   3.9338624628282547`*^9, 3.933862468078847*^9}, {3.9338625709427433`*^9, 
+   3.933862611341111*^9}, {3.933862652263915*^9, 3.933862676717701*^9}, {
+   3.9338629319466867`*^9, 3.933862937171234*^9}, {3.9338630009473124`*^9, 
+   3.933863002272332*^9}, 3.9338630772046824`*^9, {3.9338633078687763`*^9, 
+   3.933863350879794*^9}, 3.9338636104049664`*^9, {3.933863661808345*^9, 
+   3.933863666000659*^9}, {3.933863726220242*^9, 3.9338637278204603`*^9}, {
+   3.9338637687409697`*^9, 3.933863770648918*^9}, {3.933863977080426*^9, 
+   3.933864037665663*^9}, {3.933893415394161*^9, 3.933893460551342*^9}},
+ CellLabel->"In[30]:=",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"enumTemplate", "=", "\"\<class `1`(enum.Enum):\n`2`\>\""}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"reformatEnum", "[", "enumPair_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Length", "[", 
+       RowBox[{"enumPair", "[", 
+        RowBox[{"[", "2", "]"}], "]"}], "]"}], ">", " ", "0"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"StringTemplate", "[", "enumTemplate", "]"}], "[", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"enumPair", "[", 
+        RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"StringRiffle", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{
+            RowBox[{"StringTemplate", "[", "\"\<  `` = \\\"``\\\"\>\"", "]"}],
+             "[", 
+            RowBox[{"#", ",", " ", 
+             RowBox[{"ToLowerCase", "[", "#", "]"}]}], "]"}], "&"}], "/@", 
+          RowBox[{"enumPair", "[", 
+           RowBox[{"[", "2", "]"}], "]"}]}], ",", " ", "\"\<\\n\>\""}], 
+        "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", "]"}], ",", 
+     "\[IndentingNewLine]", "Nothing"}], "\[IndentingNewLine]", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"parseEnum", "[", "enumStr_", "]"}], ":=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"StringCases", "[", 
+       RowBox[{"enumStr", ",", " ", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"\"\<enum \>\"", " ", "~~", 
+           RowBox[{"(", 
+            RowBox[{"tag", ":", 
+             RowBox[{"(", 
+              RowBox[{"WordCharacter", ".."}], ")"}]}], ")"}], "~~", 
+           "\"\< {\>\""}], ")"}], ":>", "tag"}]}], "]"}], "[", 
+      RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", 
+      RowBox[{"enumStr", ",", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"tag", ":", 
+           RowBox[{
+            RowBox[{"(", 
+             RowBox[{"WordCharacter", "|", "\"\<_\>\""}], ")"}], ".."}]}], 
+          ")"}], "~~", "\"\< = \>\"", "~~", 
+         RowBox[{"val", ":", "NumberString"}]}], ":>", "tag"}]}], "]"}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+  "messageTemplate", "=", "\"\<@dataclasses.dataclass\nclass `1`:\n`2`\>\""}],
+   ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"$typeMap", "=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"\"\<string\>\"", "->", "\"\<str\>\""}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{"\"\<int32\>\"", "->", "\"\<int\>\""}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{"\"\<int64\>\"", "->", "\"\<int\>\""}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{"\"\<float64\>\"", "->", "\"\<float\>\""}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"reformatMessage", "[", "msgPair_", "]"}], ":=", 
+   "\[IndentingNewLine]", 
+   RowBox[{"If", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Length", "[", 
+       RowBox[{"msgPair", "[", 
+        RowBox[{"[", "2", "]"}], "]"}], "]"}], ">", " ", "0"}], ",", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"StringTemplate", "[", "messageTemplate", "]"}], "[", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"msgPair", "[", 
+        RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"StringRiffle", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{
+            RowBox[{"Switch", "[", 
+             RowBox[{
+              RowBox[{"#", "[", 
+               RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+              "\"\<optional\>\"", ",", 
+              RowBox[{
+              "StringTemplate", "[", "\"\<  ``: '``' = None\>\"", "]"}], ",", 
+              "\[IndentingNewLine]", "\"\<repeated\>\"", ",", 
+              RowBox[{
+              "StringTemplate", "[", "\"\<  ``: 'list[``]' = None\>\"", "]"}],
+               ",", "\[IndentingNewLine]", "_", ",", " ", 
+              RowBox[{"StringTemplate", "[", "\"\<  ``: '``'\>\"", "]"}]}], 
+             "\[IndentingNewLine]", "]"}], "[", 
+            RowBox[{
+             RowBox[{"#", "[", 
+              RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+             RowBox[{
+              RowBox[{"#", "[", 
+               RowBox[{"[", "2", "]"}], "]"}], "/.", "$typeMap"}]}], "]"}], 
+           "&"}], "/@", 
+          RowBox[{"SortBy", "[", 
+           RowBox[{
+            RowBox[{"msgPair", "[", 
+             RowBox[{"[", "2", "]"}], "]"}], ",", " ", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"#", "[", 
+               RowBox[{"[", "1", "]"}], "]"}], "==", "\"\<optional\>\""}], 
+             "&"}]}], "]"}]}], ",", "\[IndentingNewLine]", "\"\<\\n\>\""}], 
+        "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", "]"}], ",", 
+     "\[IndentingNewLine]", "Nothing"}], "\[IndentingNewLine]", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"prepUnitSpec", "[", 
+    RowBox[{"unit_", ",", " ", "tag_"}], "]"}], ":=", "\[IndentingNewLine]", 
+   RowBox[{"With", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"baseUnit", "=", 
+       RowBox[{"StringSplit", "[", 
+        RowBox[{
+         RowBox[{"\"\< \>\"", "<>", 
+          RowBox[{"StringTrim", "[", "unit", "]"}]}], ",", " ", 
+         "\[IndentingNewLine]", 
+         RowBox[{
+          RowBox[{"h", ":", 
+           RowBox[{"(", 
+            RowBox[{
+            "\"\< optional \>\"", "|", "\"\< repeated \>\"", "|", 
+             "\"\< oneof \>\""}], ")"}]}], ":>", 
+          RowBox[{"StringTrim", "[", "h", "]"}]}]}], "\[IndentingNewLine]", 
+        "]"}]}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"Replace", "[", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Length", "[", "baseUnit", "]"}], "==", "1"}], ",", 
+         "\[IndentingNewLine]", 
+         RowBox[{"{", 
+          RowBox[{"\"\<\>\"", ",", 
+           RowBox[{"StringTrim", "[", "unit", "]"}], ",", " ", "tag"}], "}"}],
+          ",", "\[IndentingNewLine]", 
+         RowBox[{"Append", "[", 
+          RowBox[{"baseUnit", ",", " ", "tag"}], "]"}]}], 
+        "\[IndentingNewLine]", "]"}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"a_", " ", ",", "b_", ",", " ", "c_"}], "}"}], ":>", 
+        RowBox[{"{", 
+         RowBox[{"a", ",", "\[IndentingNewLine]", 
+          RowBox[{"StringReplace", "[", "\[IndentingNewLine]", 
+           RowBox[{
+            RowBox[{"StringReplace", "[", "\[IndentingNewLine]", " ", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"StringSplit", "[", 
+                RowBox[{"b", ",", " ", "\"\<.\>\""}], "]"}], "[", 
+               RowBox[{"[", 
+                RowBox[{"-", "1"}], "]"}], "]"}], ",", "\[IndentingNewLine]", 
+              "$typeMap"}], "\[IndentingNewLine]", "]"}], ",", 
+            "\[IndentingNewLine]", 
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"\"\<map<\>\"", "->", "\"\<dict[\>\""}], ",", " ", 
+              RowBox[{"\"\<>\>\"", "->", "\"\<]\>\""}]}], "}"}]}], 
+           "\[IndentingNewLine]", "]"}], ",", " ", "c"}], "}"}]}]}], 
+      "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"parseMessage", "[", "enumStr_", "]"}], ":=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"StringCases", "[", 
+       RowBox[{"enumStr", ",", " ", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"\"\<message \>\"", " ", "~~", 
+           RowBox[{"(", 
+            RowBox[{"tag", ":", 
+             RowBox[{"(", 
+              RowBox[{"WordCharacter", ".."}], ")"}]}], ")"}], "~~", 
+           "\"\< {\>\""}], ")"}], ":>", "tag"}]}], "]"}], "[", 
+      RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", 
+      RowBox[{"enumStr", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"unit", ":", 
+          RowBox[{
+           RowBox[{"Except", "[", "\"\<\\n\>\"", "]"}], ".."}]}], "~~", 
+         "\"\< \>\"", "\[IndentingNewLine]", "~~", 
+         RowBox[{"tag", ":", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", "|", "\"\<_\>\""}], ")"}], ".."}]}], 
+         "~~", "\"\< = \>\"", "~~", 
+         RowBox[{"val", ":", "NumberString"}], "~~", "\"\<;\>\""}], ":>", 
+        RowBox[{"prepUnitSpec", "[", 
+         RowBox[{"unit", ",", " ", "tag"}], "]"}]}]}], "\[IndentingNewLine]", 
+      "]"}]}], "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+  "oneofTemplate", "=", 
+   "\"\<@dataclasses.dataclass\nclass `1`(OneOfType):\n`2`\>\""}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"parseOneof", "[", "enumStr_", "]"}], ":=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{"enumStr", ",", "\[IndentingNewLine]", 
+     RowBox[{"StringCases", "[", 
+      RowBox[{"enumStr", ",", " ", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"unit", ":", 
+          RowBox[{
+           RowBox[{"Except", "[", "\"\<\\n\>\"", "]"}], ".."}]}], "~~", 
+         "\"\< \>\"", "\[IndentingNewLine]", "~~", 
+         RowBox[{"tag", ":", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"WordCharacter", "|", "\"\<_\>\""}], ")"}], ".."}]}], 
+         "~~", "\"\< = \>\"", "~~", 
+         RowBox[{"val", ":", "NumberString"}], "~~", "\"\<;\>\""}], ":>", 
+        RowBox[{"prepUnitSpec", "[", 
+         RowBox[{"unit", ",", " ", "tag"}], "]"}]}]}], "\[IndentingNewLine]", 
+      "]"}]}], "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"reformatOneof", "[", "valOpts_", "]"}], ":=", 
+  "\[IndentingNewLine]", 
+  RowBox[{"If", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Length", "[", 
+      RowBox[{"valOpts", "[", 
+       RowBox[{"[", "2", "]"}], "]"}], "]"}], ">", " ", "0"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringTemplate", "[", "oneofTemplate", "]"}], "[", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"formatOneofClass", "@", 
+       RowBox[{"valOpts", "[", 
+        RowBox[{"[", "1", "]"}], "]"}]}], ",", "\[IndentingNewLine]", 
+      RowBox[{"StringRiffle", "[", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{"Switch", "[", 
+            RowBox[{
+             RowBox[{"#", "[", 
+              RowBox[{"[", "1", "]"}], "]"}], ",", "\[IndentingNewLine]", 
+             "\"\<optional\>\"", ",", 
+             RowBox[{
+             "StringTemplate", "[", "\"\<  ``: '``' = None\>\"", "]"}], ",", 
+             "\[IndentingNewLine]", "\"\<repeated\>\"", ",", 
+             RowBox[{
+             "StringTemplate", "[", "\"\<  ``: 'list[``]' = None\>\"", "]"}], 
+             ",", "\[IndentingNewLine]", "_", ",", " ", 
+             RowBox[{
+             "StringTemplate", "[", "\"\<  ``: '``' = None\>\"", "]"}]}], 
+            "\[IndentingNewLine]", "]"}], "[", 
+           RowBox[{
+            RowBox[{"#", "[", 
+             RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+            RowBox[{
+             RowBox[{"#", "[", 
+              RowBox[{"[", "2", "]"}], "]"}], "/.", "$typeMap"}]}], "]"}], 
+          "&"}], "/@", 
+         RowBox[{"SortBy", "[", 
+          RowBox[{
+           RowBox[{"valOpts", "[", 
+            RowBox[{"[", "2", "]"}], "]"}], ",", " ", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"#", "[", 
+              RowBox[{"[", "1", "]"}], "]"}], "==", "\"\<optional\>\""}], 
+            "&"}]}], "]"}]}], ",", "\[IndentingNewLine]", "\"\<\\n\>\""}], 
+       "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", "]"}], ",", 
+    "\[IndentingNewLine]", "Nothing"}], "\[IndentingNewLine]", 
+   "]"}]}]}], "Input",
+ CellChangeTimes->{{3.933793024531156*^9, 3.933793112404663*^9}, {
+   3.933793144976761*^9, 3.9337931505896807`*^9}, {3.933793240306923*^9, 
+   3.9337932416482*^9}, {3.933793273932296*^9, 3.93379329556271*^9}, {
+   3.933793945515768*^9, 3.933793976827363*^9}, {3.933794018943255*^9, 
+   3.9337942233630457`*^9}, {3.9337942735119143`*^9, 3.933794291177044*^9}, {
+   3.933794533882925*^9, 3.933794588177506*^9}, {3.9338614401865673`*^9, 
+   3.933861514297737*^9}, {3.933861945819983*^9, 3.9338620074973717`*^9}, {
+   3.9338620515078087`*^9, 3.933862109827487*^9}, {3.9338622466411543`*^9, 
+   3.933862262412429*^9}, {3.9338623106733513`*^9, 3.933862397129476*^9}, {
+   3.9338624628282547`*^9, 3.933862468078847*^9}, {3.9338625709427433`*^9, 
+   3.933862611341111*^9}, {3.933862652263915*^9, 3.933862676717701*^9}, {
+   3.9338629319466867`*^9, 3.933862937171234*^9}, {3.9338630009473124`*^9, 
+   3.933863002272332*^9}, 3.9338630772046824`*^9, {3.9338633078687763`*^9, 
+   3.933863350879794*^9}, 3.9338636104049664`*^9, {3.933863661808345*^9, 
+   3.933863666000659*^9}, {3.933864172720051*^9, 3.933864228566041*^9}, {
+   3.934366200333652*^9, 3.934366202546853*^9}, {3.934367625215227*^9, 
+   3.934367631780463*^9}},
+ CellLabel->"In[91]:=",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"pythonifyProto", "[", "proto_", "]"}], ":=", "\[IndentingNewLine]", 
+  RowBox[{"With", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"blocks", "=", 
+      RowBox[{"cleanProto", "[", 
+       RowBox[{"\"\<\\n\>\"", "<>", "proto"}], "]"}]}], "}"}], ",", 
+    "\[IndentingNewLine]", 
+    RowBox[{"StringRiffle", "[", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Flatten", "@", 
+       RowBox[{"{", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"Flatten", "[", 
+           RowBox[{"blocks", "[", 
+            RowBox[{"[", 
+             RowBox[{";;", ",", " ", "3"}], "]"}], "]"}], "]"}], "//", 
+          RowBox[{"Map", "[", 
+           RowBox[{"reformatEnum", "@*", "parseEnum"}], "]"}]}], ",", 
+         "\[IndentingNewLine]", 
+         RowBox[{
+          RowBox[{"Flatten", "[", 
+           RowBox[{"blocks", "[", 
+            RowBox[{"[", 
+             RowBox[{";;", ",", " ", "4"}], "]"}], "]"}], "]"}], "//", 
+          RowBox[{"Map", "[", 
+           RowBox[{"reformatOneof", "@*", "parseOneof"}], "]"}]}], ",", 
+         "\[IndentingNewLine]", 
+         RowBox[{
+          RowBox[{"Flatten", "[", "\[IndentingNewLine]", 
+           RowBox[{"blocks", "[", 
+            RowBox[{"[", 
+             RowBox[{";;", ",", " ", 
+              RowBox[{";;", "2"}]}], "]"}], "]"}], "\[IndentingNewLine]", 
+           "]"}], "//", 
+          RowBox[{"Map", "[", 
+           RowBox[{"(", 
+            RowBox[{"reformatMessage", "@*", "parseMessage"}], ")"}], 
+           "]"}]}]}], "\[IndentingNewLine]", "}"}]}], ",", 
+      "\[IndentingNewLine]", "\"\<\\n\\n\>\""}], "\[IndentingNewLine]", 
+     "]"}]}], "\[IndentingNewLine]", "]"}]}]], "Input",
+ CellChangeTimes->{{3.933794300640476*^9, 3.9337944136493683`*^9}, {
+   3.933794481417151*^9, 3.933794484017825*^9}, {3.9338628964094152`*^9, 
+   3.933862898850151*^9}, {3.9338630614067383`*^9, 3.933863065778249*^9}, {
+   3.933863097107093*^9, 3.933863103000618*^9}, {3.933864074429359*^9, 
+   3.933864076248658*^9}, 3.9338642438970423`*^9},
+ CellLabel->"In[79]:=",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"fullProto", "=", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/Mark/Documents/Postdoc/CMCCDB/ord-schema/proto/reaction.proto\
+\>\"", ",", " ", "\"\<Text\>\""}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"convProto", "=", 
+   RowBox[{"pythonifyProto", "[", "fullProto", "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"protoClassNames", "=", 
+   RowBox[{"StringCases", "[", 
+    RowBox[{"convProto", ",", " ", 
+     RowBox[{
+      RowBox[{"\"\<class \>\"", "~~", 
+       RowBox[{"tag", ":", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"WordCharacter", "|", "\"\<_\>\""}], ")"}], ".."}]}], "~~", 
+       
+       RowBox[{"(", 
+        RowBox[{"\"\<(\>\"", "|", "\"\<:\>\""}], ")"}]}], ":>", "tag"}]}], 
+    "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+  "baseTemplate", " ", "=", " ", 
+   "\"\<\nimport enum, dataclasses\n\n__all__ = [\n ``\n]\n\nclass OneOfType:\
+\n\t...\n\n``\n\>\""}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"parallelProto", "=", 
+   RowBox[{
+    RowBox[{"StringTemplate", "[", "baseTemplate", "]"}], "[", 
+    "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"StringRiffle", "[", 
+      RowBox[{
+       RowBox[{"Partition", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{"\"\<\\\"\>\"", "<>", "#", "<>", "\"\<\\\"\>\""}], "&"}], "/@",
+           "protoClassNames"}], ",", " ", 
+         RowBox[{"UpTo", "[", "8", "]"}]}], "]"}], ",", " ", "\"\<,\\n \>\"", 
+       ",", " ", "\"\<, \>\""}], "]"}], ",", 
+     RowBox[{"pythonifyProto", "[", "fullProto", "]"}]}], 
+    "\[IndentingNewLine]", "]"}]}], ";"}], "\n", 
+ RowBox[{"Export", "[", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"FileNameJoin", "@", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"NotebookDirectory", "[", "]"}], ",", " ", 
+      "\"\<parallel_proto.py\>\""}], "}"}]}], ",", "\[IndentingNewLine]", 
+   "parallelProto", ",", "\[IndentingNewLine]", "\"\<Text\>\""}], 
+  "\[IndentingNewLine]", "]"}]}], "Input",
+ CellChangeTimes->{{3.9337938390059223`*^9, 3.933793846370658*^9}, {
+   3.933794829986187*^9, 3.933794830204743*^9}, 3.933864080337822*^9, 
+   3.933864236049716*^9, 3.9338802411047287`*^9, 3.933880529175932*^9, {
+   3.933880559473084*^9, 3.9338805800662394`*^9}, {3.933880634132236*^9, 
+   3.9338806343287077`*^9}, {3.9343660848428*^9, 3.93436618790567*^9}, {
+   3.934366243234763*^9, 3.934366251130681*^9}},
+ CellLabel->
+  "In[102]:=",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
+
+Cell[BoxData["\<\"/Users/Mark/Documents/Postdoc/CMCCDB/ord-schema/ord_schema/\
+scripts/parallel_proto.py\"\>"], "Output",
+ CellChangeTimes->{{3.9337948329451647`*^9, 3.933794838390296*^9}, 
+   3.933794982388783*^9, 3.933795027193983*^9, 3.9337958435258923`*^9, 
+   3.9337958977903557`*^9, 3.933796066060506*^9, {3.933809041975705*^9, 
+   3.933809064876185*^9}, {3.933809107129911*^9, 3.933809121507275*^9}, 
+   3.93380929917793*^9, 3.933810893154252*^9, {3.933864054818692*^9, 
+   3.9338640777486687`*^9}, {3.933864239369793*^9, 3.93386424703016*^9}, 
+   3.9338805310022793`*^9, {3.933880567113927*^9, 3.933880581386436*^9}, 
+   3.933880636129903*^9, 3.933893472911911*^9, 3.934366253026759*^9, 
+   3.9343676434373293`*^9},
+ CellLabel->
+  "Out[107]=",ExpressionUUID->"35b63364-9812-4ab1-8add-21b9255c21d2"]
+}, Open  ]]
+},
+WindowSize->{808, 911},
+WindowMargins->{{Automatic, 345}, {Automatic, 17}},
+FrontEndVersion->"13.1 for Mac OS X x86 (64-bit) (June 16, 2022)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"4811aeca-8b37-4bf9-8a08-cd783e740d48"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 7747, 172, 1081, "Input",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
+Cell[8308, 194, 13399, 325, 1963, "Input",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
+Cell[21710, 521, 2136, 49, 283, "Input",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
+Cell[CellGroupData[{
+Cell[23871, 574, 2490, 63, 577, "Input",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
+Cell[26364, 639, 806, 12, 34, "Output",ExpressionUUID->"35b63364-9812-4ab1-8add-21b9255c21d2"]
+}, Open  ]]
+}
+]
+*)
+

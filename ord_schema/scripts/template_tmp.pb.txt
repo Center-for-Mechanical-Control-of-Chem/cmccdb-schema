@@ -1,0 +1,117 @@
+  identifiers {
+    type: REACTION_TYPE
+    value: "$Reaction_type"
+  }
+  inputs {
+    key: "$Reactant1_name"
+    value {
+      components {
+        identifiers {
+          type: SMILES
+          value: "$Reactant1_smiles"
+        }
+        amount {
+          moles {
+            value: $Reactant1_amount$
+            units: MILLIMOLE
+          }
+        }
+        reaction_role: REACTANT
+      }
+      components {
+        identifiers {
+          type: SMILES
+          value: "$Reactant2_smiles"
+        }
+        amount {
+          moles {
+            value: $Reactant2_amount$
+            units: MILLIMOLE
+          }
+        }
+        reaction_role: REACTANT
+      }
+      components {
+        identifiers {
+          type: SMILES
+          value: "$Reactant3_smiles"
+        }
+        amount {
+          moles {
+            value: $Reactant3_amount$
+            units: MILLIMOLE
+          }
+        }
+        reaction_role: REACTANT
+      }
+      components {
+        identifiers {
+          type: SMILES
+          value: "$Reactant4_smiles"
+        }
+        amount {
+          moles {
+            value: $Reactant4_amount$
+            units: MILLIMOLE
+          }
+        }
+        reaction_role: REACTANT
+      }
+      components{
+        identifiers {
+          type: NAME
+          value: "$Solvent$"
+        }
+      reaction_role: SOLVENT
+      }
+      addition_order: 1
+    }
+  }
+  mechanicalcondition {
+    mechanical_treatment: "$Mechanical_treatment$"
+    treatment_duration: $Treatment_duration$
+    treatment_magnitude: $Treatment_magnitude$
+  }
+  outcomes {
+    conversion {
+      value: $Product1_yield$
+    }
+    products {
+      identifiers {
+        type: SMILES
+        value: "$Product1_smiles"
+      }
+    }
+    products {
+      identifiers {
+        type: SMILES
+        value: "$Product2_smiles"
+      }
+    }
+    products {
+      identifiers {
+        type: SMILES
+        value: "$Product3_smiles"
+      }
+    }
+  }
+  provenance {
+    experimenter {
+      orcid: "0000-0000-0000-0000"
+      organization: "Department of Chemistry, TAMU "
+    }
+    city: "College Station"
+    doi: "10.1021/acs.joc.6b01138"
+    publication_url: "$URL$"
+    record_created {
+      time {
+        value: "6/4/2024, 10:53 AM"
+      }
+      person {
+        name: "THC"
+        orcid: "0000-0000-0000-0000"
+        organization: "TAMU"
+        email: "peterchao1@tamu.edu"
+      }
+    }
+  }

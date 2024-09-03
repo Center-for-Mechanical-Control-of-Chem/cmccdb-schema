@@ -367,12 +367,12 @@ def get_referenced_reaction_ids(message: reaction_pb2.Reaction) -> set[str]:
 
 
 def is_valid_reaction_id(reaction_id: str) -> bool:
-    match = re.fullmatch("^ord-[0-9a-f]{32}$", reaction_id)
+    match = re.fullmatch("^cmcc-[0-9a-f]{32}$", reaction_id)
     return bool(match)
 
 
 def is_valid_dataset_id(dataset_id: str) -> bool:
-    match = re.fullmatch("^ord_dataset-[0-9a-f]{32}$", dataset_id)
+    match = re.fullmatch("^cmcc_dataset-[0-9a-f]{32}$", dataset_id)
     return bool(match)
 
 
@@ -459,7 +459,7 @@ def validate_reaction(message: reaction_pb2.Reaction, options: Optional[Validati
         )
     if options.validate_ids:
         # The reaction_id suffix is a 32-character uuid4 hex string.
-        if not re.fullmatch("^ord-[0-9a-f]{32}$", message.reaction_id):
+        if not re.fullmatch("^cmcc-[0-9a-f]{32}$", message.reaction_id):
             warnings.warn("Reaction ID is malformed", ValidationError)
     if options.require_provenance:
         if not message.HasField("provenance"):
