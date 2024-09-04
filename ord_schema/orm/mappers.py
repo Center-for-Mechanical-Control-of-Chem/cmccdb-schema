@@ -41,7 +41,7 @@ from sqlalchemy.orm import relationship
 
 import ord_schema.orm.rdkit_mappers  # pylint: disable=unused-import
 from ord_schema import message_helpers
-from ord_schema.logging import get_logger
+from ord_schema.logging_helpers import get_logger
 from ord_schema.orm import Base
 from ord_schema.proto import dataset_pb2, reaction_pb2
 
