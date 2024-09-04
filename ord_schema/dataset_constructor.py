@@ -1119,21 +1119,41 @@ class DatasetConstructor:
         return self._template
 
     @classmethod
-    def enumerate_spreadsheet(cls, file, extra_fields=None):
+    def enumerate_spreadsheet(cls, file,
+                              name=None,
+                              id=None,
+                              extra_fields=None
+                              ):
         from google.protobuf.json_format import ParseDict
         from .proto import dataset_pb2
 
+        if name is None:
+            name, _ = os.path.splitext(os.path.basename(file))
+        if id is None:
+            id = name + "-" + str(uuid.uuid4())[:8]
+
         parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields)
-        protos = [
-            ProtoTemplater.prep_proto(
-                parser.template.apply(
-                    cls.sanitize_csv_data(row, len(parser.template.template_paths))
+        reaction_num = 0
+        protos = []
+        for parser, data in parser_data:
+            for row in data:
+                reaction_num += 1
+                protos.append(
+                    dict(
+                        ProtoTemplater.prep_proto(
+                            parser.template.apply(
+                                cls.sanitize_csv_data(row, len(parser.template.template_paths))
+                            )
+                        ),
+                        reaction_id=id + "-" + str(reaction_num)
+                    )
                 )
-            )
-            for parser, data in parser_data
-            for row in data
-        ]
+
         return ParseDict(
-            {"reactions": protos},
+            {
+                "name":name,
+                "dataset_id":id,
+                "reactions": protos
+            },
             dataset_pb2.Dataset()
         )
