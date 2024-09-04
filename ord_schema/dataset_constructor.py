@@ -8,12 +8,13 @@ import pandas as pd
 class Placeholders(enum.Enum):
     TemplateKey = "key"
     TemplateParameter = "$tp"
+    InvalidParameterPlaceholder = "-invalid-"
 
 unit_aliases = {
     "%":"percentage",
     "Hz":"hertz",
-    "mol":"mole",
-    "mmol":"millimole",
+    # "mol":"mole",
+    # "mmol":"millimole",
     "s":"second",
     "hr":"hour",
     "N":"newton",
@@ -475,14 +476,17 @@ class ProtoTemplater:
             if vtree is not None:
                 valid, val = self.validate_value(vtree["_value"], path[-1], val)
                 if not valid:
-                    if (
-                            path[-1] == "value"
-                            and len(subtree) == 2
-                            and ("units" in subtree)
-                    ): # TODO: implement a better check for an optional value type
-                        del parent_tree[p]
+                    if isinstance(subtree, dict):
+                        if (
+                                path[-1] == "value"
+                                and len(subtree) == 2
+                                and ("units" in subtree or "type" in subtree)
+                        ): # TODO: implement a better check for an optional value type
+                            parent_tree[p] = Placeholders.InvalidParameterPlaceholder
+                        else:
+                            subtree[path[-1]] = Placeholders.InvalidParameterPlaceholder
                     else:
-                        del subtree[path[-1]]
+                        subtree[path[-1]] = Placeholders.InvalidParameterPlaceholder
                 else:
                     subtree[path[-1]] = val
             else:
@@ -494,18 +498,36 @@ class ProtoTemplater:
         if isinstance(proto, dict):
             new = {}
             for k,v in proto.items():
-                if isinstance(v, list) and all(
-                    isinstance(vv, dict) and list(sorted(vv.keys())) == ["key", "value"]
-                    for vv in v
-                ):
-                    new[k] = {
-                        vv["key"]:cls.prep_proto(vv["value"])
+                if v is not Placeholders.InvalidParameterPlaceholder:
+                    if isinstance(v, list) and all(
+                        isinstance(vv, dict) and list(sorted(vv.keys())) == ["key", "value"]
                         for vv in v
-                    }
-                else:
-                    new[k] = cls.prep_proto(v)
+                    ):
+                        subv = {}
+                        for vv in v:
+                            if vv["key"] is Placeholders.InvalidParameterPlaceholder: continue
+                            if vv["value"] is Placeholders.InvalidParameterPlaceholder: continue
+                            prepped = cls.prep_proto(vv["value"])
+                            if prepped is Placeholders.InvalidParameterPlaceholder: continue
+                            subv[vv["key"]] = prepped
+                            vv["key"]:cls.prep_proto(vv["value"])
+                        if len(subv) > 0:
+                            new[k] = subv
+                    else:
+                        prepped = cls.prep_proto(v)
+                        if prepped is not Placeholders.InvalidParameterPlaceholder:
+                            new[k] = prepped
+            if len(new) == 0 or len(new) == 1 and next(iter(new.keys())) == "reaction_role":
+                new = Placeholders.InvalidParameterPlaceholder
         elif isinstance(proto, list):
-            new = [cls.prep_proto(p) for p in proto]
+            new = []
+            for p in proto:
+                if p is Placeholders.InvalidParameterPlaceholder: continue
+                prepped = cls.prep_proto(p)
+                if prepped is Placeholders.InvalidParameterPlaceholder:continue
+                new.append(prepped)
+            if len(new) == 0:
+                new = Placeholders.InvalidParameterPlaceholder
         else:
             new = proto
         return new

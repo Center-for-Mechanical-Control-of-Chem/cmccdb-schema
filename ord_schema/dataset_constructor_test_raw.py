@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     rxns = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         # os.path.join(os.path.dirname(__file__), "../../cmccdb-data/extended_template.csv"),
-        os.path.join(os.path.dirname(__file__), "../../cmccdb-data/Halogenation.xlsx"),
+        os.path.join(os.path.dirname(__file__), "../../cmccdb-data/Arylation.xlsx"),
         extra_fields={
             'record_created': {
                 "time": {"value":str(datetime.datetime.now())},
