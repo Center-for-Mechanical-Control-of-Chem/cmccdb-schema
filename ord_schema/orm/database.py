@@ -40,7 +40,7 @@ def get_connection_string(
 def reconfigure_databse(engine: Engine):
     logger.warning("RECONFIGURING DATABASE")
     with engine.begin() as connection:
-        connection.execute(text("DELETE DATABASE ord;"))
+        connection.execute(text("DROP DATABASE IF EXISTS ord;"))
         connection.execute(text("CREATE DATABASE ord;"))
         return prepare_database(engine)
 
