@@ -37,6 +37,13 @@ def get_connection_string(
     """Creates an SQLAlchemy connection string."""
     return f"postgresql://{username}:{password}@{host}:{port}/{database}?client_encoding=utf-8"
 
+def reconfigure_databse(engine: Engine):
+    logger.warning("RECONFIGURING DATABASE")
+    with engine.begin() as connection:
+        connection.execute(text("DELETE DATABASE ord;"))
+        connection.execute(text("CREATE DATABASE ord;"))
+        return prepare_database(engine)
+
 
 def prepare_database(engine: Engine) -> bool:
     """Prepares the database and creates the ORM table structure.
