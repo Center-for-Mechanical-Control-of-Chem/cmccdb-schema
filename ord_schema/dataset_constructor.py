@@ -1,13 +1,21 @@
-import collections
-import dataclasses, os, sys
-import enum
+import csv, os, sys
+import enum, dataclasses, uuid, collections
 import itertools
-import uuid
+import re
 
-class Placeholders:
+
+class Placeholders(enum.Enum):
     TemplateKey = "key"
     TemplateParameter = "$tp"
 
+unit_aliases = {
+    "%":"percentage",
+    "Hz":"hertz",
+    "mol":"mole",
+    "L":"liter",
+    "mL":"milliliter",
+    "nm":"nanometer"
+}
 def normalize_key(k):
     k_bits = k.split("(", 1)
     if len(k_bits) == 2:
@@ -16,7 +24,8 @@ def normalize_key(k):
         units = None
     k = k.strip().replace(" ", "_").lower()
     if units is not None:
-        units = units.replace(")", "").strip().replace(" ", "_").lower()
+        units = units.replace(")", "").strip()
+        units = unit_aliases.get(units, units).replace(" ", "_").lower()
     return k, units
 
 class ProtoType:
@@ -80,17 +89,21 @@ class ProtoMessage:
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
     def insert_field(self, field_name):
+        field_name, units = normalize_key(field_name)
         key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
         msg = self
         if len(key_path) > 0:
             msg = msg[key_path[0]]
-            primary = msg
             for m in key_path[1:]:
                 msg = msg[m]
-        else:
-            primary = msg
         if fields is not None:
+            if units is not None:
+                unit_field = ProtoHandler.resolve_unit_message(fields, units)
+                fields.update(unit_field)
             msg.update(fields)
+        elif units is not None:
+            unit_field = ProtoHandler.resolve_unit_message(msg, units)
+            msg.add_message(unit_field)
         return msg
     def insert_tree(self, subtree):
         msg = self
@@ -101,6 +114,8 @@ class ProtoMessage:
                 msg.insert_tree(header) # subtree
 
     def has_path(self, key_path):
+        if len(key_path) == 0:
+            return False
         key, rest = key_path[0], key_path[1:]
         if key not in self.fields:
             return False
@@ -161,7 +176,6 @@ class ProtoContainer:
                 self.values[-1] if len(self.values) > 0 else None
             )
     def add_key(self, key):
-        self.template_keys.append(key)
         if len(self.keys) > 0 and self.keys[-1] is None:
             self.keys[-1] = Placeholders.TemplateParameter
         else:
@@ -202,7 +216,7 @@ class ProtoContainer:
 
     def insert_field(self, field_name):
         field_name, units = normalize_key(field_name)
-        if field_name == Placeholders.TemplateKey: # reserved for keys in maps
+        if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
             self.add_key(field_name)
             return self
         else:
@@ -213,14 +227,15 @@ class ProtoContainer:
                 self.add_message(msg)
             if len(key_path) > 0:
                 msg = msg[key_path[0]]
-                primary = msg
                 for m in key_path[1:]:
                     msg = msg[m]
-            else:
-                primary = msg
+
             if fields is not None:
+                if units is not None:
+                    unit_field = ProtoHandler.resolve_unit_message(fields, units)
+                    fields.update(unit_field)
                 msg.update(fields)
-            if units is not None:
+            elif units is not None:
                 unit_field = ProtoHandler.resolve_unit_message(msg, units)
                 msg.add_message(unit_field)
             return msg
@@ -269,16 +284,23 @@ class ProtoContainer:
         elif self.type.container_type is not None:
             return [v.to_template() for v in self.values]
         else:
-            return self.values[0].to_template()
+            if ProtoHandler.is_value_type(self.type.value_type):
+                return Placeholders.TemplateParameter
+            else:
+                return self.values[0].to_template()
 
     def has_path(self, key_path):
         return self.get_default_message().has_path(key_path)
 
 
 class ProtoTemplater:
-    def __init__(self, template_spec):
+    def __init__(self, template_spec, validator=None):
         self.spec = template_spec
+        self.validator = None
         self._paths = None
+    @classmethod
+    def from_proto(cls, proto:'ProtoContainer|ProtoMessage'):
+        return cls(proto.to_template(), proto)
     @property
     def template_paths(self):
         if self._paths is None:
@@ -293,7 +315,7 @@ class ProtoTemplater:
                 for k,v in template.items()
                 for p in (
                              [[Placeholders.TemplateKey]]
-                                if k == Placeholders.TemplateParameter else
+                                if k is Placeholders.TemplateParameter else
                              []
                          ) + [
                         [k] + pp
@@ -306,10 +328,27 @@ class ProtoTemplater:
                 for i, m in enumerate(template)
                 for p in cls.get_template_paths(m)
             ]
-        elif template == Placeholders.TemplateParameter:
+        elif template is Placeholders.TemplateParameter:
             return [[]]
         else:
             return []
+
+    @classmethod
+    def merge_templates(cls, base:dict, vars:dict):
+        new = {}
+        for k in vars.keys():
+            if k in base.keys():
+                if isinstance(base[k], dict):
+                    new[k] = cls.merge_templates(base[k], vars[k])
+                elif isinstance(base[k], list):
+                    new[k] = base[k] + vars[k]
+                else:
+                    new[k] = vars[k]
+            else:
+                new[k] = vars[k]
+        for k in base.keys() - vars.keys():
+            new[k] = base[k]
+        return new
 
     def apply(self, values):
         if len(values) != len(self.template_paths):
@@ -318,6 +357,10 @@ class ProtoTemplater:
             ))
         copy_tree = self.spec.copy() # shallow copy
         for path, val in zip(self.template_paths, values):
+            if self.validator is not None:
+                validator = self.validator
+            else:
+                validator = None
             subtree = copy_tree
             base_tree = self.spec
             for p in path[:-1]:
@@ -351,8 +394,7 @@ class ProtoTemplater:
             return str(proto)
 
 class ProtoHandler:
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import parallel_proto # TODO: should use the real proto eventually, but this works for now
+    from .proto import parallel_proto # TODO: should use the real proto eventually, but this works for now
 
     _proto_map = None
     _alias_map = None
@@ -484,6 +526,12 @@ class ProtoHandler:
     @classmethod
     def get_kind_type_map(cls):
         return cls.build_maps()[2]
+    @classmethod
+    def get_nounit_value_type_map(cls):
+        return {
+            "percentage":cls.parallel_proto.Percentage,
+            "unitless":cls.parallel_proto.FloatValue
+        }
 
     @classmethod
     def get_reaction_conditions_map(cls):
@@ -558,14 +606,21 @@ class ProtoHandler:
         return fields
 
     @classmethod
-    def is_value_type(cls, field):
-        return field in cls.get_value_type_map()
+    def is_value_type(cls, type):
+        return (
+            type in cls.atomic_types_map.values()
+            or (
+                not issubclass(type, cls.parallel_proto.OneOfType)
+                and issubclass(type, enum.Enum)
+            )
+        )
     @classmethod
     def is_identifier_type(cls, field):
         return field in cls.get_identifier_type_map()
 
     @classmethod
     def bfs_search(cls, root_type:ProtoType, test):
+
         bfs_queue = collections.deque()
         bfs_queue.append([[root_type], []])
 
@@ -601,14 +656,23 @@ class ProtoHandler:
             msg = {field_name:key_name}
             key_path = key_path[:-1]
         else:
-            msg = ProtoContainer(field_type)
-            submsg = ProtoMessage(
-                field_type.value_type,
-                {
-                    "type": key_name,
-                    "value": Placeholders.TemplateParameter
-                })
-            msg.add_message(submsg)
+            if field_type.value_type in cls.get_kind_type_map():
+                msg = ProtoMessage(
+                    field_type.value_type,
+                    {
+                        "type": key_name
+                    })
+            else:
+                msg = ProtoMessage(
+                    field_type.value_type,
+                    {
+                        "type": key_name,
+                        "value": Placeholders.TemplateParameter
+                    })
+            if field_type.key_type is not None or field_type.container_type is not None:
+                submsg = msg
+                msg = ProtoContainer(field_type)
+                msg.add_message(submsg)
         return key_path, msg
     @classmethod
     def resolve_insertion_spot(cls, root_type:ProtoType, key_name):
@@ -620,7 +684,7 @@ class ProtoHandler:
 
         id_map = cls.get_identifier_type_map()
         def test(field_name, field_type, full_path, key_path):
-            if field_name == key_name:
+            if field_name is not None and field_name == key_name:
                 if units is not None:
                     raise ValueError(field_name, units)
                 return True, (key_path, None)
@@ -628,6 +692,10 @@ class ProtoHandler:
                 return True, cls.resolve_identifier_fields(key_path, field_type, field_name, key_name)
             else:
                 return False, None
+
+        if key_name in id_map.get(root_type.value_type, []):
+            woof = cls.resolve_identifier_fields([], ProtoType(None, root_type.value_type, None), "type", key_name)
+            return woof
 
         res = cls.bfs_search(root_type, test)
         if res is not None: return res
@@ -642,15 +710,23 @@ class ProtoHandler:
             f.name:cls.resolve_type(f.type)
             for f in dataclasses.fields(cls.parallel_proto.Reaction)
         }
+
     @classmethod
     def resolve_unit_message(cls, msg, units):
         unit_map = cls.get_units_type_map()
+        nounit_map = cls.get_nounit_value_type_map()
         type = unit_map.get(units, None)
         if type is None:
+            type = nounit_map.get(units, None)
+            if type is not None: units = None
+        if type is None:
             raise ValueError("unknown unit specifier {}; known types are {}".format(
-                units, "\n".join(unit_map.keys())
+                units, "\n".join(itertools.chain(unit_map.keys(), nounit_map.keys()))
             ))
-        unit_msg = ProtoMessage(type, {"units":units, "value":Placeholders.TemplateParameter})
+        if units is None:
+            unit_msg = ProtoMessage(type, {"value":Placeholders.TemplateParameter})
+        else:
+            unit_msg = ProtoMessage(type, {"units":units, "value":Placeholders.TemplateParameter})
 
         kind_map = cls.get_kind_type_map()
         if isinstance(msg, ProtoContainer):
@@ -668,80 +744,11 @@ class ProtoHandler:
             msg = unit_msg
         return msg
 
-class PropertySpec:
-    def __init__(self, name_field_map:'dict[str,list]'): # we take advantage of the ordering of python dicts since python 3.x
-        self.name_field_map = name_field_map
-        self.num_fields = sum(len(f) for f in name_field_map.values())
-
-    @classmethod
-    def get_reaction_proto(cls):
-        return ProtoMessage(
-            ProtoType(None, ProtoHandler.parallel_proto.Reaction, None)
-        )
-
-    @classmethod
-    def resolve_proto_key(cls, key, root=None):
-        if root is None:
-            root = ProtoHandler.parallel_proto.Reaction
-        if key in ProtoHandler.alias_map[root]:
-            new_root = ProtoHandler.alias_map[root]
-        else:
-            new_root = getattr(root, key)
-        return new_root
-    def parse_rows(self, block):
-        block = [
-            list(row) + [""] * (self.num_fields - len(row)) # pad rows if necessary
-            for row in block
-        ]
-        p = 0
-        records = [{} for _ in range(len(block))]
-        for n,f in self.name_field_map.items():
-            nf = len(f)
-            for record, row in zip(records, block):
-                record[n] = row[p:p+nf]
-            p += nf
-        return records
-    def parse(self, row):
-        return self.parse_rows([row])[0]
-
-    @classmethod
-    def parse_kf(self, key_row, fields_row):
-        key_row = list(key_row) + [""]*(len(fields_row) - len(key_row))
-
-        key_splits = {}
-        key = None
-        start = 0
-        for n,k in enumerate(key_row):
-            k = k.strip()
-            if len(k) > 0: # not the empty string
-                if key is not None:
-                    key_splits[key] = (start, n)
-                key = k
-                start = n
-        else:
-            if key is None:
-                raise ValueError("spec had no keys")
-            key_splits[key] = (start, len(key_row)-1)
-
-        return {
-            k:fields_row[s[0]:s[1]]
-            for k,s in key_splits.items()
-        }
-    @classmethod
-    def from_csv_rows(cls, key_row, fields_row):
-        return cls(cls.parse_kf(key_row, fields_row))
-
-class ReactantSpec:
-
-    def __init__(self, common_block, variant_structure):
-        self.common = common_block
-        self.variant = variant_structure
-
-    def build_dict(self, variant_data):
-        new_data = self.variant.parse(variant_data)
-        base_data = self.common.asdict()
-        return dict(base_data, **new_data)
-
+class DatasetBlocks(enum.Enum):
+    REACTION_BLOCK = "REACTION"
+    VARIANTS_BLOCK = "VARIANTS"
+    DATA_BLOCK = "DATA"
+    COMMENT = '#!'
 class DatasetConstructor:
     """
     An alternate CSV input wrapper
@@ -750,35 +757,216 @@ class DatasetConstructor:
     def __init__(self, common_block, variant_structure):
         self.common = common_block
         self.variant = variant_structure
+        self._template = None
 
-    def build_dict(self, variant_data):
-        new_data = self.variant.parse(variant_data)
-        base_data = self.common.asdict()
-        return dict(base_data, **new_data)
+    @classmethod
+    def from_iter(cls, iterable):
+        blocks = []
+        common = []
+        variants = []
+        data = []
+        active = None
+        for row in iterable:
+            if row[0].startswith(DatasetBlocks.COMMENT.value):
+                continue
+            key = row[0].upper()
+            if key == DatasetBlocks.REACTION_BLOCK.value:
+                if active is None:
+                    active = DatasetBlocks.REACTION_BLOCK
+                elif active is not DatasetBlocks.DATA_BLOCK:
+                    raise ValueError("expected to be on a data block")
+                else:
+                    blocks.append([common, variants, data])
+                    common = []
+                    variants = []
+                    data = []
+            elif key == DatasetBlocks.VARIANTS_BLOCK.value:
+                if active is None or active is not DatasetBlocks.REACTION_BLOCK:
+                    raise ValueError("expected to be on a reaction block")
+                active = DatasetBlocks.VARIANTS_BLOCK
+            elif key == DatasetBlocks.DATA_BLOCK.value:
+                if active is None or active is not DatasetBlocks.VARIANTS_BLOCK:
+                    raise ValueError("expected to be on a variants block")
+                active = DatasetBlocks.DATA_BLOCK
+            elif active is not None and len(row[0]) > 0:
+                raise ValueError("unknown block specifier {}".format(row[0]))
+            elif active is not None and all(r=="" for r in row):
+                if active is not DatasetBlocks.DATA_BLOCK:
+                    raise ValueError("expected to be on a data block")
+                active = None
+                blocks.append([common, variants, data])
+                common = []
+                variants = []
+                data = []
+            elif active is DatasetBlocks.REACTION_BLOCK:
+                common.append(row[1:])
+            elif active is DatasetBlocks.VARIANTS_BLOCK:
+                variants.append(row[1:])
+            elif active is DatasetBlocks.DATA_BLOCK:
+                data.append(row[1:])
+        else:
+            if active is not None:
+                if active is not DatasetBlocks.DATA_BLOCK:
+                    raise ValueError("expected to be on a data block")
+                blocks.append([common, variants, data])
+                common = []
+                variants = []
+                data = []
 
+        return [
+            (cls(com, var), dat)
+            for com,var,dat in blocks
+        ]
 
-if __name__ == "__main__":
-    rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
-    # rxn.insert_tree([
-    #     "INPUTS",
-    #     [
-    #         "key",
-    #         "REACTANT", ["INCHI", "SMILES", "Amount (gram)"],
-    #         "REACTANT", ["SMILES", "Amount (mole)"]
-    #     ]
-    # ])
-    rxn.insert_tree([
-        "REACTANT", ["INCHI", "SMILES", "Amount (gram)"],
-        "REACTANT", ["SMILES", "Amount (mole)"]
-    ])
-    template = ProtoTemplater(rxn.to_template())
+    @classmethod
+    def from_csv(cls, csv_file):
+        with open(csv_file) as raw:
+            return cls.from_iter(csv.reader(raw))
 
-    print(
-        ProtoTemplater.format_proto(
-            {"reactions":template.apply(["C", "C", .25, "CC", 1.2])}
+    @classmethod
+    def _parse_csv_rows(cls, csv_rows):
+        key_row, child_rows = csv_rows[0], csv_rows[1:]
+
+        keys = []
+        splits = []
+        key = ""
+        start = 0
+        for n, k in enumerate(key_row):
+            k = k.strip()
+            if len(k) > 0:  # not the empty string
+                if start < n:
+                    keys.append(key)
+                    splits.append([start, n])
+                key = k
+                start = n
+        else:
+            if key == "": raise ValueError("spec had no keys")
+            keys.append(key)
+            splits.append([start, len(key_row)])
+
+        parser = lambda r:r[0] if len(r) == 1 else cls._parse_csv_rows(r)
+        flat_tree = sum(
+            # concatenate parse trees, lift empty keys up a level
+            [
+                parser([
+                    r[s[0]:s[1]]
+                    for r in child_rows
+                ])
+                    if k == "" else
+                [k, parser([
+                    r[s[0]:s[1]]
+                    for r in child_rows
+                ])]
+                for k, s in zip(keys, splits)
+            ],
+            []
         )
-    )
-    # print(
-    #     template.apply(["CHHC", "HC", .25, "OO", 1.2])
-    # )
-    # print(template.spec)
+
+        return cls.strip_empties(flat_tree)
+    @classmethod
+    def strip_empties(cls, tree_list):
+        return [
+            s
+                if isinstance(s, str) else
+            cls.strip_empties(s)
+            for s in tree_list
+            if (isinstance(s, str) and len(s) > 0 or len(cls.strip_empties(s)) > 0)
+        ]
+
+    comment_char = "#!"
+    @classmethod
+    def comment_index(cls, row):
+        n = 0
+        for r in row:
+            if r.startswith(DatasetBlocks.COMMENT.value): break
+            n += 1
+        return n
+    @classmethod
+    def parse_csv_rows(cls, csv_rows):
+        csv_rows = [
+            r[:cls.comment_index(r)]
+            for r in csv_rows
+        ]
+        max_len = max(len(r) for r in csv_rows)
+        csv_rows = [
+            [s.strip() for s in r] + [""] * (max_len - len(r))
+            for r in csv_rows
+        ]
+        return cls._parse_csv_rows(csv_rows)
+    int_regex = re.compile(r'\-?\d{1,10}')
+    num_regex = re.compile(r'\-?\d{1,10}\.\d{1,10}')
+    false_regex = re.compile(r'FALSE|NO', re.IGNORECASE)
+    true_regex = re.compile(r'TRUE|YES', re.IGNORECASE)
+    @classmethod
+    def sanitize_csv_data(cls, row):
+        row = [r.strip() for r in row]
+        trailing_spaces = 0
+        for _ in reversed(row):
+            if _ == "":
+                trailing_spaces += 1
+            else:
+                break
+        if trailing_spaces > 0: row = row[:-trailing_spaces]
+        return [
+                False if cls.false_regex.fullmatch(d) else
+                True if cls.true_regex.fullmatch(d) else
+                int(d) if cls.int_regex.fullmatch(d) else
+                float(d) if cls.num_regex.fullmatch(d) else
+                d
+                for d in row
+            ]
+
+    @classmethod
+    def sort_reaction_keys(cls, template):
+        new = {}
+        reaction_fields = [
+            f.name for f in dataclasses.fields(ProtoHandler.parallel_proto.Reaction)
+        ]
+        for k in sorted(template.keys(), key=lambda rk:reaction_fields.index(rk)):
+            new[k] = template[k]
+        return new
+    @classmethod
+    def setup_template(cls, common, variant):
+
+        rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
+        nt_tree = cls.parse_csv_rows(common[:-1])
+        rxn.insert_tree(nt_tree)
+        base_template = ProtoTemplater.from_proto(rxn).apply(
+            cls.sanitize_csv_data([s for s in common[-1] if len(s) > 0])
+        )
+
+        rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
+        var_tree = cls.parse_csv_rows(variant)
+        rxn.insert_tree(var_tree)
+        var_template = rxn.to_template()
+
+        return ProtoTemplater(
+            ProtoTemplater.merge_templates(
+                base_template,
+                var_template
+            )
+        )
+
+    @property
+    def template(self):
+        if self._template is None:
+            self._template = self.setup_template(self.common, self.variant)
+        return self._template
+
+    @classmethod
+    def enumerate_csv(cls, file):
+        parser_data = cls.from_csv(file)
+        return [
+            "\n".join(
+                ProtoTemplater.format_proto(
+                    {
+                        "reactions":
+                            cls.sort_reaction_keys(
+                                parser.template.apply(cls.sanitize_csv_data(row))
+                            )
+                    }
+                )
+                for row in data
+            )
+            for parser, data in parser_data
+        ]

@@ -21,14 +21,14 @@ from collections.abc import Mapping
 from enum import IntEnum
 from typing import Any, Optional
 
-from dateutil import parser
 from rdkit import Chem
 from rdkit import __version__ as RDKIT_VERSION
 
-import ord_schema
-from ord_schema import message_helpers
-from ord_schema.logging import get_logger
-from ord_schema.proto import dataset_pb2, reaction_pb2
+# import ord_schema
+from . import type_info as ord_schema
+from . import message_helpers
+from .logging_helpers import get_logger
+from .proto import dataset_pb2, reaction_pb2
 
 logger = get_logger(__name__)
 
@@ -923,6 +923,7 @@ def validate_mass_spec_measurement_type(
 
 def validate_date_time(message: reaction_pb2.DateTime):
     if message.value:
+        from dateutil import parser
         try:
             parser.parse(message.value).ctime()
         except parser.ParserError:
@@ -941,6 +942,7 @@ def validate_reaction_provenance(message: reaction_pb2.ReactionProvenance):
     experiment_start = None
     record_created = None
     record_modified = None
+    from dateutil import parser
     try:
         if message.experiment_start.value:
             experiment_start = parser.parse(message.experiment_start.value)

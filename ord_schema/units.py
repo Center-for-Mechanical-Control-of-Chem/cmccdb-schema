@@ -18,8 +18,8 @@ from typing import Optional, Tuple, Type, Union
 
 import numpy as np
 
-import ord_schema
-from ord_schema.proto import reaction_pb2
+from . import type_info as ord_schema
+from .proto import reaction_pb2
 
 # Accepted synonyms for units. Note that all values will be converted to
 # lowercase.

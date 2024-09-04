@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 class OneOfType:
-	...
+    ...
 
 class ReactionIdentifierType(enum.Enum):
   UNSPECIFIED = "unspecified"
@@ -380,6 +380,7 @@ class TimeUnit(enum.Enum):
 
 class ForceUnit(enum.Enum):
   UNSPECIFIED = "unspecified"
+  NEWTON = "newton"
   MILLINEWTON = "millinewton"
 
 class FrequencyUnit(enum.Enum):
