@@ -1,7 +1,7 @@
 
 
 if __name__ == "__main__":
-    import os, sys
+    import os, sys, datetime
     root = __file__
     for _ in range(2): root = os.path.dirname(root)
     sys.path.insert(0, root)
@@ -10,14 +10,18 @@ if __name__ == "__main__":
     from ord_schema.proto import reaction_pb2
     from ord_schema import validations
 
-    rxns = dataset_constructor.DatasetConstructor.enumerate_csv(
-        os.path.join(os.path.dirname(__file__), "../../cmccdb-data/extended_template.csv")
+    rxns = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
+        # os.path.join(os.path.dirname(__file__), "../../cmccdb-data/extended_template.csv"),
+        os.path.join(os.path.dirname(__file__), "../../cmccdb-data/Halogenation.xlsx"),
+        extra_fields={
+            'record_created': {
+                "time": {"value":str(datetime.datetime.now())},
+                "username": "maboyer",
+                "email": "maboyer@tamu.edu"
+            }
+        }
     )
-
-    textpb = "\n".join(rxns)
-    wtf = textpb.encode("utf-8")
-    dataset = reaction_pb2.Reaction.FromString(wtf)
-    validations.validate_datasets({"<text>": dataset})
+    validations.validate_datasets({"<text>": rxns})
 
 
     # print(

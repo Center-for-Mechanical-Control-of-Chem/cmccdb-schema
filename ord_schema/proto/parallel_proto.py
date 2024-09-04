@@ -723,13 +723,13 @@ class ElectrochemistryCell:
 
 @dataclasses.dataclass
 class MechanochemistryConditions:
-  force: 'Force'
-  frequency: 'Frequency'
   type: 'MechanochemistryType'
-  ball_material: 'str'
   details: 'str'
-  duration: 'Time'
   liquid_assisted: 'bool' = None
+  force: 'Force' = None
+  frequency: 'Frequency' = None
+  ball_material: 'str' = None
+  duration: 'Time' = None
 
 @dataclasses.dataclass
 class FlowConditions:

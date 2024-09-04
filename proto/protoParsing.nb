@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     27957,        674]
-NotebookOptionsPosition[     27186,        654]
-NotebookOutlinePosition[     27580,        670]
-CellTagsIndexPosition[     27537,        667]
+NotebookDataLength[     28486,        686]
+NotebookOptionsPosition[     27715,        666]
+NotebookOutlinePosition[     28109,        682]
+CellTagsIndexPosition[     28066,        679]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -190,7 +190,8 @@ Cell[BoxData[{
    3.933863666000659*^9}, {3.933863726220242*^9, 3.9338637278204603`*^9}, {
    3.9338637687409697`*^9, 3.933863770648918*^9}, {3.933863977080426*^9, 
    3.933864037665663*^9}, {3.933893415394161*^9, 3.933893460551342*^9}},
- CellLabel->"In[30]:=",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
+ CellLabel->
+  "In[110]:=",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
 
 Cell[BoxData[{
  RowBox[{
@@ -517,7 +518,8 @@ Cell[BoxData[{
    3.933863666000659*^9}, {3.933864172720051*^9, 3.933864228566041*^9}, {
    3.934366200333652*^9, 3.934366202546853*^9}, {3.934367625215227*^9, 
    3.934367631780463*^9}},
- CellLabel->"In[91]:=",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
+ CellLabel->
+  "In[134]:=",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
 
 Cell[BoxData[
  RowBox[{
@@ -568,17 +570,22 @@ Cell[BoxData[
    3.933862898850151*^9}, {3.9338630614067383`*^9, 3.933863065778249*^9}, {
    3.933863097107093*^9, 3.933863103000618*^9}, {3.933864074429359*^9, 
    3.933864076248658*^9}, 3.9338642438970423`*^9},
- CellLabel->"In[79]:=",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
+ CellLabel->
+  "In[145]:=",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
 
 Cell[CellGroupData[{
 
 Cell[BoxData[{
  RowBox[{
   RowBox[{"fullProto", "=", 
-   RowBox[{"Import", "[", 
+   RowBox[{"Import", "[", "\[IndentingNewLine]", 
     RowBox[{
-    "\"\</Users/Mark/Documents/Postdoc/CMCCDB/ord-schema/proto/reaction.proto\
-\>\"", ",", " ", "\"\<Text\>\""}], "]"}]}], ";"}], "\n", 
+     RowBox[{"FileNameJoin", "@", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"NotebookDirectory", "[", "]"}], ",", " ", 
+        "\"\<reaction.proto\>\""}], "}"}]}], ",", " ", "\[IndentingNewLine]", 
+     "\"\<Text\>\""}], "]"}]}], ";"}], "\n", 
  RowBox[{
   RowBox[{"convProto", "=", 
    RowBox[{"pythonifyProto", "[", "fullProto", "]"}]}], ";"}], "\n", 
@@ -600,7 +607,7 @@ Cell[BoxData[{
   RowBox[{
   "baseTemplate", " ", "=", " ", 
    "\"\<\nimport enum, dataclasses\n\n__all__ = [\n ``\n]\n\nclass OneOfType:\
-\n\t...\n\n``\n\>\""}], ";"}], "\[IndentingNewLine]", 
+\n    ...\n\n``\n\>\""}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"parallelProto", "=", 
    RowBox[{
@@ -622,9 +629,11 @@ Cell[BoxData[{
  RowBox[{"Export", "[", "\[IndentingNewLine]", 
   RowBox[{
    RowBox[{"FileNameJoin", "@", 
-    RowBox[{"{", 
+    RowBox[{"{", "\[IndentingNewLine]", 
      RowBox[{
-      RowBox[{"NotebookDirectory", "[", "]"}], ",", " ", 
+      RowBox[{"ParentDirectory", "@", 
+       RowBox[{"NotebookDirectory", "[", "]"}]}], ",", " ", 
+      "\"\<ord_schema\>\"", ",", " ", "\"\<proto\>\"", ",", " ", 
       "\"\<parallel_proto.py\>\""}], "}"}]}], ",", "\[IndentingNewLine]", 
    "parallelProto", ",", "\[IndentingNewLine]", "\"\<Text\>\""}], 
   "\[IndentingNewLine]", "]"}]}], "Input",
@@ -633,12 +642,14 @@ Cell[BoxData[{
    3.933864236049716*^9, 3.9338802411047287`*^9, 3.933880529175932*^9, {
    3.933880559473084*^9, 3.9338805800662394`*^9}, {3.933880634132236*^9, 
    3.9338806343287077`*^9}, {3.9343660848428*^9, 3.93436618790567*^9}, {
-   3.934366243234763*^9, 3.934366251130681*^9}},
+   3.934366243234763*^9, 3.934366251130681*^9}, {3.9343953489760237`*^9, 
+   3.9343953933983707`*^9}, {3.934395563831519*^9, 3.934395563990378*^9}, {
+   3.934396551001371*^9, 3.934396552601779*^9}},
  CellLabel->
-  "In[102]:=",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
+  "In[146]:=",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
 
 Cell[BoxData["\<\"/Users/Mark/Documents/Postdoc/CMCCDB/ord-schema/ord_schema/\
-scripts/parallel_proto.py\"\>"], "Output",
+proto/parallel_proto.py\"\>"], "Output",
  CellChangeTimes->{{3.9337948329451647`*^9, 3.933794838390296*^9}, 
    3.933794982388783*^9, 3.933795027193983*^9, 3.9337958435258923`*^9, 
    3.9337958977903557`*^9, 3.933796066060506*^9, {3.933809041975705*^9, 
@@ -647,9 +658,10 @@ scripts/parallel_proto.py\"\>"], "Output",
    3.9338640777486687`*^9}, {3.933864239369793*^9, 3.93386424703016*^9}, 
    3.9338805310022793`*^9, {3.933880567113927*^9, 3.933880581386436*^9}, 
    3.933880636129903*^9, 3.933893472911911*^9, 3.934366253026759*^9, 
-   3.9343676434373293`*^9},
+   3.9343676434373293`*^9, {3.934395388425325*^9, 3.934395396181343*^9}, 
+   3.934395565524465*^9, 3.934409914825411*^9},
  CellLabel->
-  "Out[107]=",ExpressionUUID->"35b63364-9812-4ab1-8add-21b9255c21d2"]
+  "Out[151]=",ExpressionUUID->"53dfb580-e238-4fa5-89b4-d7c1f89b1bf9"]
 }, Open  ]]
 },
 WindowSize->{808, 911},
@@ -669,12 +681,12 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 7747, 172, 1081, "Input",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
-Cell[8308, 194, 13399, 325, 1963, "Input",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
-Cell[21710, 521, 2136, 49, 283, "Input",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
+Cell[558, 20, 7751, 173, 1081, "Input",ExpressionUUID->"fb35dd49-8957-4ea6-a1b5-bb4936ec9fc7"],
+Cell[8312, 195, 13403, 326, 1963, "Input",ExpressionUUID->"e56eb0b3-4575-4129-aad6-222fcf16ad39"],
+Cell[21718, 523, 2140, 50, 283, "Input",ExpressionUUID->"6f925ebe-5976-43d2-9c14-7b590811f680"],
 Cell[CellGroupData[{
-Cell[23871, 574, 2490, 63, 577, "Input",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
-Cell[26364, 639, 806, 12, 34, "Output",ExpressionUUID->"35b63364-9812-4ab1-8add-21b9255c21d2"]
+Cell[23883, 577, 2915, 71, 598, "Input",ExpressionUUID->"bb0b946f-3bfc-4244-a844-23f7bf1d355e"],
+Cell[26801, 650, 898, 13, 34, "Output",ExpressionUUID->"53dfb580-e238-4fa5-89b4-d7c1f89b1bf9"]
 }, Open  ]]
 }
 ]

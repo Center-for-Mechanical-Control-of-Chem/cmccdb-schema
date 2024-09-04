@@ -732,6 +732,10 @@ def validate_electrochemistry_measurement(
 ):
     del message  # Unused.
 
+def validate_mechanochemistry_conditions(
+    message: reaction_pb2.MechanochemistryConditions,
+):
+    check_type_and_details(message)
 
 def validate_flow_conditions(message: reaction_pb2.FlowConditions):
     check_type_and_details(message)
@@ -1070,6 +1074,16 @@ def validate_wavelength(message: reaction_pb2.Wavelength):
     ensure_float_nonnegative(message, "value")
     ensure_float_nonnegative(message, "precision")
 
+def validate_frequency(message: reaction_pb2.Frequency):
+    check_value_and_units(message)
+    ensure_float_nonnegative(message, "value")
+    ensure_float_nonnegative(message, "precision")
+
+def validate_force(message: reaction_pb2.Force):
+    check_value_and_units(message)
+    ensure_float_nonnegative(message, "value")
+    ensure_float_nonnegative(message, "precision")
+
 
 def validate_flow_rate(message: reaction_pb2.FlowRate):
     check_value_and_units(message)
@@ -1147,6 +1161,7 @@ _VALIDATOR_SWITCH = {
     reaction_pb2.ElectrochemistryConditions: validate_electrochemistry_conditions,
     reaction_pb2.ElectrochemistryConditions.ElectrochemistryCell: validate_electrochemistry_cell,
     reaction_pb2.ElectrochemistryConditions.ElectrochemistryMeasurement: validate_electrochemistry_measurement,
+    reaction_pb2.MechanochemistryConditions: validate_mechanochemistry_conditions,
     reaction_pb2.FlowConditions: validate_flow_conditions,
     reaction_pb2.FlowConditions.Tubing: validate_tubing,
     # Annotations
@@ -1177,6 +1192,8 @@ _VALIDATOR_SWITCH = {
     reaction_pb2.Voltage: validate_voltage,
     reaction_pb2.Length: validate_length,
     reaction_pb2.Wavelength: validate_wavelength,
+    reaction_pb2.Frequency: validate_frequency,
+    reaction_pb2.Force: validate_force,
     reaction_pb2.FlowRate: validate_flow_rate,
     reaction_pb2.Percentage: validate_percentage,
     reaction_pb2.FloatValue: validate_float_value,

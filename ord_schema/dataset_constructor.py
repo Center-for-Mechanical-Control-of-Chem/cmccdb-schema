@@ -2,6 +2,7 @@ import csv, os, sys
 import enum, dataclasses, uuid, collections
 import itertools
 import re
+import pandas as pd
 
 
 class Placeholders(enum.Enum):
@@ -12,9 +13,16 @@ unit_aliases = {
     "%":"percentage",
     "Hz":"hertz",
     "mol":"mole",
+    "mmol":"millimole",
+    "s":"second",
+    "hr":"hour",
+    "N":"newton",
+    "mN":"millinewton",
+    "min":"minute",
     "L":"liter",
     "mL":"milliliter",
-    "nm":"nanometer"
+    "nm":"nanometer",
+    "atm":"atmosphere"
 }
 def normalize_key(k):
     k_bits = k.split("(", 1)
@@ -81,16 +89,35 @@ class ProtoMessage:
                 v.validate()
             # field_type = ProtoHandler.get_field_type(self.type, f)
     def get_field(self, field_name):
-        field_names = [f.name for f in dataclasses.fields(self.type)]
-        if field_name not in field_names:
-            raise ValueError("bad field {} for type {} (allowed fields are {})".format(field_name, self.type, field_names))
-        if field_name not in self.fields:
+        kmap = ProtoHandler.get_kind_type_map().get(self.type, {})
+        if field_name in kmap.values():
+            subtype = None
+            for tt, name in kmap.items():
+                if name == field_name:
+                    subtype = tt
+                    break
+            else:
+                raise ValueError("???")
+        else:
+            field_names = [f.name for f in dataclasses.fields(self.type)]
+            if field_name not in field_names:
+                raise ValueError("bad field '{}' for type {} (allowed fields are {})".format(field_name, self.type, field_names))
+
             subtype = ProtoHandler.get_field_type(self.type, field_name)
+        if field_name not in self.fields:
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
-    def insert_field(self, field_name):
+    def insert_field(self, field_name, data=None):
         field_name, units = normalize_key(field_name)
         key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
+        if data is not None:
+            key_path, final_key = key_path[:-1], key_path[-1]
+            if fields is None:
+                fields = {}
+            fields.update({final_key:data})
+
+        if field_name == "time":
+            raise ValueError(key_path)
         msg = self
         if len(key_path) > 0:
             msg = msg[key_path[0]]
@@ -112,6 +139,17 @@ class ProtoMessage:
                 msg = self.insert_field(header)
             else:
                 msg.insert_tree(header) # subtree
+    def insert_dict(self, subtree):
+        for header,subtree in subtree.items():
+            if isinstance(subtree, dict):
+                msg = self.insert_field(header)
+                msg.insert_dict(subtree)
+            elif isinstance(subtree, list):
+                msg = self.insert_field(header)
+                for submsg in subtree:
+                    msg.add_message(submsg)
+            else:
+                msg = self.insert_field(header, data=subtree)
 
     def has_path(self, key_path):
         if len(key_path) == 0:
@@ -189,6 +227,9 @@ class ProtoContainer:
         else:
             key = data_or_key
 
+        if isinstance(data, dict):
+            data = ProtoMessage(self.type.value_type, data)
+
         if data.type is not self.type.value_type:
             raise ValueError(data.type, self.type.value_type)
 
@@ -210,26 +251,39 @@ class ProtoContainer:
             self.add_message(ProtoMessage(self.type.value_type))
         return self.values[-1]
     def get_field(self, field_name):
-        return self.get_default_message().get_field(field_name)
+        if isinstance(field_name, str):
+            return self.get_default_message().get_field(field_name)
+        else:
+            if self.type.key_type is not None:
+                return {
+                    "key": self.keys[field_name],
+                    "value": self.values[field_name]
+                }
+            else:
+                return self.values[field_name]
     def __getitem__(self, item):
         return self.get_field(item)
 
-    def insert_field(self, field_name):
+    def insert_field(self, field_name, data=None):
         field_name, units = normalize_key(field_name)
         if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
             self.add_key(field_name)
             return self
         else:
             key_path, fields = ProtoHandler.resolve_insertion_spot(self.type, field_name)
+            if data is not None:
+                key_path, final_key = key_path[:-1], key_path[-1]
+                if fields is None:
+                    fields = {}
+                fields.update({final_key: data})
             msg = self.get_default_message()
-            if msg.has_path(key_path):
+            if msg.has_path(key_path) and self.type.container_type is not None:
                 msg = ProtoMessage(self.type.value_type)
                 self.add_message(msg)
             if len(key_path) > 0:
                 msg = msg[key_path[0]]
                 for m in key_path[1:]:
                     msg = msg[m]
-
             if fields is not None:
                 if units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(fields, units)
@@ -246,6 +300,17 @@ class ProtoContainer:
                 msg = self.insert_field(header)
             else:
                 msg.insert_tree(header) # subtree
+    def insert_dict(self, subtree):
+        for header,subtree in subtree.items():
+            if isinstance(subtree, dict):
+                msg = self.insert_field(header)
+                msg.insert_dict(subtree)
+            elif isinstance(subtree, list):
+                msg = self.insert_field(header)
+                for submsg in subtree:
+                    msg.add_message(submsg)
+            else:
+                msg = self.insert_field(header, data=subtree)
     def __setitem__(self, key, value):
         self.get_default_message().__setitem__(key, value)
     def update(self, proto:'ProtoContainer|ProtoMessage|dict'):
@@ -296,7 +361,7 @@ class ProtoContainer:
 class ProtoTemplater:
     def __init__(self, template_spec, validator=None):
         self.spec = template_spec
-        self.validator = None
+        self.validator = validator
         self._paths = None
     @classmethod
     def from_proto(cls, proto:'ProtoContainer|ProtoMessage'):
@@ -350,48 +415,109 @@ class ProtoTemplater:
             new[k] = base[k]
         return new
 
+    def validate_value(self, validator, key, value):
+        valid = True
+        if key == "type":
+            if value == "":
+                value = "UNSPECIFIED"
+            else:
+                if isinstance(validator, ProtoMessage):
+                    validator_type = ProtoHandler.get_field_type(validator.type, key)
+                elif isinstance(validator, ProtoContainer):
+                    validator_type = ProtoHandler.get_field_type(validator.type.value_type, key)
+                else:
+                    raise ValueError("unexpected validator {}".format(validator))
+                value, _ = normalize_key(value)
+                value = ProtoHandler.get_enum_values_map().get(
+                    validator_type.value_type,
+                    {value:value}
+                )[value]
+        elif isinstance(value, str) and value == "":
+            valid = False
+        return valid, value
     def apply(self, values):
         if len(values) != len(self.template_paths):
             raise ValueError("expected {} values got {}".format(
                 len(self.template_paths), len(values)
             ))
         copy_tree = self.spec.copy() # shallow copy
+        if self.validator is not None:
+            validator_tree = {
+                "_value":self.validator,
+                "children":{}
+            }
+        else:
+            validator_tree = None
         for path, val in zip(self.template_paths, values):
-            if self.validator is not None:
-                validator = self.validator
+            if validator_tree is not None:
+                vtree = validator_tree
             else:
-                validator = None
+                vtree = None
+            parent_tree = None
             subtree = copy_tree
             base_tree = self.spec
+            p = None
             for p in path[:-1]:
                 if subtree[p] is base_tree[p]:
                     subtree[p] = subtree[p].copy()
+                if vtree is not None:
+                    if p not in vtree["children"]:
+                        subval = vtree["_value"][p]
+                        vtree["children"][p] = {
+                            "_value":subval,
+                            "children":{}
+                        }
+                    vtree = vtree["children"][p]
+                parent_tree = subtree
                 subtree = subtree[p]
                 base_tree = base_tree[p]
-            subtree[path[-1]] = val
+
+            if vtree is not None:
+                valid, val = self.validate_value(vtree["_value"], path[-1], val)
+                if not valid:
+                    if (
+                            path[-1] == "value"
+                            and len(subtree) == 2
+                            and ("units" in subtree)
+                    ): # TODO: implement a better check for an optional value type
+                        del parent_tree[p]
+                    else:
+                        del subtree[path[-1]]
+                else:
+                    subtree[path[-1]] = val
+            else:
+                subtree[path[-1]] = val
         return copy_tree
 
     @classmethod
-    def format_proto(cls, proto, padding=""):
-        #TODO: use the actual proto for this
+    def prep_proto(cls, proto):
         if isinstance(proto, dict):
-            return "\n".join(
-                (
-                    padding + k + " {\n" + cls.format_proto(p, padding=padding + "  ") + "\n"+padding+"}"
-                        if isinstance(p, dict) else
-                    "\n".join(
-                        padding + k + " {\n" + cls.format_proto(l, padding=padding + "  ") + "\n"+padding+"}"
-                        for l in p
-                        )
-                        if isinstance(p, list) else
-                    padding + k + ": " + cls.format_proto(p, padding=padding + "  ")
-                )
-                for k,p in proto.items()
-            )
+            new = {}
+            for k,v in proto.items():
+                if isinstance(v, list) and all(
+                    isinstance(vv, dict) and list(sorted(vv.keys())) == ["key", "value"]
+                    for vv in v
+                ):
+                    new[k] = {
+                        vv["key"]:cls.prep_proto(vv["value"])
+                        for vv in v
+                    }
+                else:
+                    new[k] = cls.prep_proto(v)
         elif isinstance(proto, list):
-            return "\n".join(cls.format_proto(p, padding=padding + "  ") for p in proto)
+            new = [cls.prep_proto(p) for p in proto]
         else:
-            return str(proto)
+            new = proto
+        return new
+
+
+    @classmethod
+    def build_proto(cls, proto):
+        from .proto import reaction_pb2
+        from google.protobuf.json_format import ParseDict
+        proto = cls.prep_proto(proto)
+        rxn = ParseDict(proto, reaction_pb2.Reaction())
+        return rxn
 
 class ProtoHandler:
     from .proto import parallel_proto # TODO: should use the real proto eventually, but this works for now
@@ -478,14 +604,20 @@ class ProtoHandler:
     _identifiers_map = None
     _units_map = None
     _kind_map = None
+    _enum_map = None
     @classmethod
     def _build_maps(cls):
         identifier_types = {}
         kinds_types = {}
         units_types = {}
+        enum_types = {}
         for type_name in cls.parallel_proto.__all__:
             type_obj = getattr(cls.parallel_proto, type_name)
-            # if isinstance(type_obj, enum.Enum):
+            if issubclass(type_obj, enum.Enum):
+                enum_types[type_obj] = {
+                    e.value:e.name
+                    for e in type_obj
+                }
             if type_obj is cls.parallel_proto.ReactionRoleType: # very special cased
                 identifier_types[type_obj] = [
                     e.value for e in type_obj
@@ -506,16 +638,17 @@ class ProtoHandler:
                         identifier_types[type_obj] = [
                             e.value for e in cls.resolve_typestr(field.type)
                         ]
-        return identifier_types, units_types, kinds_types
+        return identifier_types, units_types, kinds_types, enum_types
     @classmethod
     def build_maps(cls):
         if (
                 cls._identifiers_map is None
                 or cls._units_map is None
                 or cls._kind_map is None
+                or cls._enum_map is None
         ):
-            cls._identifiers_map, cls._units_map, cls._kind_map = cls._build_maps()
-        return cls._identifiers_map, cls._units_map, cls._kind_map
+            cls._identifiers_map, cls._units_map, cls._kind_map, cls._enum_map = cls._build_maps()
+        return cls._identifiers_map, cls._units_map, cls._kind_map, cls._enum_map
 
     @classmethod
     def get_identifier_type_map(cls):
@@ -526,6 +659,9 @@ class ProtoHandler:
     @classmethod
     def get_kind_type_map(cls):
         return cls.build_maps()[2]
+    @classmethod
+    def get_enum_values_map(cls):
+        return cls.build_maps()[3]
     @classmethod
     def get_nounit_value_type_map(cls):
         return {
@@ -636,37 +772,43 @@ class ProtoHandler:
                 bfs_queue.append([full_path, key_path])
 
 
-    default_paths = {
-        parallel_proto.Reaction: dict(
-            {
-                s: (["inputs", "components"], {"reaction_role":s})
-                for s in
-                ['reactant', 'reagent', 'workup', 'authentic_standard', 'catalyst', 'internal_standard', 'solvent']
-            },
-            **{
-                s: (["outcomes", "products"], {"reaction_role":s})
-                for s in ['byproduct', 'side_product', 'product']
-            }
-        )
-    }
-
+    default_paths = {}
+    @classmethod
+    def get_default_paths(cls):
+        role_map = cls.get_enum_values_map()[cls.parallel_proto.ReactionRoleType]
+        return {
+            cls.parallel_proto.Reaction: dict(
+                {
+                    s: (["inputs", "components"], {"reaction_role":role_map[s]})
+                    for s in
+                    ['reactant', 'reagent', 'workup', 'authentic_standard', 'catalyst', 'internal_standard', 'solvent']
+                },
+                **{
+                    s: (["outcomes", "products"], {"reaction_role":role_map[s]})
+                    for s in ['byproduct', 'side_product', 'product']
+                }
+            )
+        }
     @classmethod
     def resolve_identifier_fields(cls, key_path, field_type, field_name, key_name):
         if issubclass(field_type.value_type, enum.Enum):
-            msg = {field_name:key_name}
+            value_name = cls.get_enum_values_map()[field_type.value_type][key_name]
+            msg = {field_name:value_name}
             key_path = key_path[:-1]
         else:
+            core_type = cls.get_field_type(field_type.value_type, "type").value_type
+            value_name = cls.get_enum_values_map()[core_type][key_name]
             if field_type.value_type in cls.get_kind_type_map():
                 msg = ProtoMessage(
                     field_type.value_type,
                     {
-                        "type": key_name
+                        "type": value_name
                     })
             else:
                 msg = ProtoMessage(
                     field_type.value_type,
                     {
-                        "type": key_name,
+                        "type": value_name,
                         "value": Placeholders.TemplateParameter
                     })
             if field_type.key_type is not None or field_type.container_type is not None:
@@ -679,8 +821,9 @@ class ProtoHandler:
         # we resolve where a given key should be added to a given
         # type by running a breadth-first search for the key name
         key_name, units = normalize_key(key_name)
-        if key_name in cls.default_paths.get(root_type.value_type, []):
-            return cls.default_paths[root_type.value_type][key_name]
+        default_paths = cls.get_default_paths()
+        if key_name in default_paths.get(root_type.value_type, []):
+            return default_paths[root_type.value_type][key_name]
 
         id_map = cls.get_identifier_type_map()
         def test(field_name, field_type, full_path, key_path):
@@ -726,7 +869,9 @@ class ProtoHandler:
         if units is None:
             unit_msg = ProtoMessage(type, {"value":Placeholders.TemplateParameter})
         else:
-            unit_msg = ProtoMessage(type, {"units":units, "value":Placeholders.TemplateParameter})
+            core_type = cls.get_field_type(type, "units").value_type
+            value_name = cls.get_enum_values_map()[core_type][units]
+            unit_msg = ProtoMessage(type, {"units":value_name, "value":Placeholders.TemplateParameter})
 
         kind_map = cls.get_kind_type_map()
         if isinstance(msg, ProtoContainer):
@@ -754,13 +899,14 @@ class DatasetConstructor:
     An alternate CSV input wrapper
     """
 
-    def __init__(self, common_block, variant_structure):
+    def __init__(self, common_block, variant_structure, extra_fields=None):
         self.common = common_block
         self.variant = variant_structure
+        self.extra_fields = extra_fields
         self._template = None
 
     @classmethod
-    def from_iter(cls, iterable):
+    def from_iter(cls, iterable, extra_fields=None):
         blocks = []
         common = []
         variants = []
@@ -814,18 +960,26 @@ class DatasetConstructor:
                 data = []
 
         return [
-            (cls(com, var), dat)
+            (cls(com, var, extra_fields=extra_fields), dat)
             for com,var,dat in blocks
         ]
 
     @classmethod
-    def from_csv(cls, csv_file):
-        with open(csv_file) as raw:
-            return cls.from_iter(csv.reader(raw))
+    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None):
+        # adapted from templating.py
+        if suffix is None:
+            _, suffix = os.path.splitext(file_name_or_buffer)
+        if suffix in [".xls", ".xlsx"]:
+            data = pd.read_excel(file_name_or_buffer, dtype=str, keep_default_na=False)
+        else:
+            data = pd.read_csv(file_name_or_buffer, dtype=str, keep_default_na=False)
+        return cls.from_iter(data.values, extra_fields=extra_fields)
 
     @classmethod
     def _parse_csv_rows(cls, csv_rows):
         key_row, child_rows = csv_rows[0], csv_rows[1:]
+        if len(child_rows) == 0:
+            return cls.strip_empties([key_row])
 
         keys = []
         splits = []
@@ -840,7 +994,7 @@ class DatasetConstructor:
                 key = k
                 start = n
         else:
-            if key == "": raise ValueError("spec had no keys")
+            # if key == "": raise ValueError("spec had no keys")
             keys.append(key)
             splits.append([start, len(key_row)])
 
@@ -898,15 +1052,19 @@ class DatasetConstructor:
     false_regex = re.compile(r'FALSE|NO', re.IGNORECASE)
     true_regex = re.compile(r'TRUE|YES', re.IGNORECASE)
     @classmethod
-    def sanitize_csv_data(cls, row):
+    def sanitize_csv_data(cls, row, max_row=None):
         row = [r.strip() for r in row]
-        trailing_spaces = 0
-        for _ in reversed(row):
-            if _ == "":
-                trailing_spaces += 1
-            else:
-                break
-        if trailing_spaces > 0: row = row[:-trailing_spaces]
+        if max_row is not None and len(row) > max_row:
+            trailing_spaces = 0
+            for _ in reversed(row):
+                if _ == "":
+                    trailing_spaces += 1
+                else:
+                    break
+            if trailing_spaces > 0:
+                diff = max_row - len(row)
+                trailing_spaces = min(trailing_spaces, diff)
+                row = row[:-trailing_spaces]
         return [
                 False if cls.false_regex.fullmatch(d) else
                 True if cls.true_regex.fullmatch(d) else
@@ -926,13 +1084,19 @@ class DatasetConstructor:
             new[k] = template[k]
         return new
     @classmethod
-    def setup_template(cls, common, variant):
+    def setup_template(cls, common, variant, extra_fields=None):
 
         rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
         nt_tree = cls.parse_csv_rows(common[:-1])
         rxn.insert_tree(nt_tree)
-        base_template = ProtoTemplater.from_proto(rxn).apply(
-            cls.sanitize_csv_data([s for s in common[-1] if len(s) > 0])
+        if extra_fields is not None:
+            rxn.insert_dict(extra_fields)
+        templater = ProtoTemplater.from_proto(rxn)
+        base_template = templater.apply(
+            cls.sanitize_csv_data(
+                [s for s in common[-1] if len(s) > 0],
+                len(templater.template_paths)
+            )
         )
 
         rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
@@ -944,29 +1108,32 @@ class DatasetConstructor:
             ProtoTemplater.merge_templates(
                 base_template,
                 var_template
-            )
+            ),
+            rxn
         )
 
     @property
     def template(self):
         if self._template is None:
-            self._template = self.setup_template(self.common, self.variant)
+            self._template = self.setup_template(self.common, self.variant, extra_fields=self.extra_fields)
         return self._template
 
     @classmethod
-    def enumerate_csv(cls, file):
-        parser_data = cls.from_csv(file)
-        return [
-            "\n".join(
-                ProtoTemplater.format_proto(
-                    {
-                        "reactions":
-                            cls.sort_reaction_keys(
-                                parser.template.apply(cls.sanitize_csv_data(row))
-                            )
-                    }
+    def enumerate_spreadsheet(cls, file, extra_fields=None):
+        from google.protobuf.json_format import ParseDict
+        from .proto import dataset_pb2
+
+        parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields)
+        protos = [
+            ProtoTemplater.prep_proto(
+                parser.template.apply(
+                    cls.sanitize_csv_data(row, len(parser.template.template_paths))
                 )
-                for row in data
             )
             for parser, data in parser_data
+            for row in data
         ]
+        return ParseDict(
+            {"reactions": protos},
+            dataset_pb2.Dataset()
+        )

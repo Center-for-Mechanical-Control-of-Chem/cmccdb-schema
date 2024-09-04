@@ -738,10 +738,10 @@ message MechanochemistryConditions {
     TWIN_SCREW = 5;
   }
   MechanochemistryType type = 1;
-  Frequency frequency = 3;
-  Force force = 4;
-  string ball_material = 5;
-  Time duration = 6;
+  optional Frequency frequency = 3;
+  optional Force force = 4;
+  optional string ball_material = 5;
+  optional Time duration = 6;
   optional bool liquid_assisted = 7;
   string details = 8;
 }
