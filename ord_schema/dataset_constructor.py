@@ -1130,11 +1130,15 @@ class DatasetConstructor:
         if name is None:
             name, _ = os.path.splitext(os.path.basename(file))
         if id is None:
-            id = name + "-" + str(uuid.uuid4())[:8]
+            id = str(uuid.uuid4()).replace("-", "")[:32]
 
         parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields)
-        reaction_num = 0
         protos = []
+        total_rxns = len([r for _,d in parser_data for r in d])
+        ndig = max([4, len(str(total_rxns))])
+        subid = id[:-ndig]
+        templ = "{:0>"+str(ndig)+"}"
+        reaction_num = 0
         for parser, data in parser_data:
             for row in data:
                 reaction_num += 1
@@ -1145,14 +1149,14 @@ class DatasetConstructor:
                                 cls.sanitize_csv_data(row, len(parser.template.template_paths))
                             )
                         ),
-                        reaction_id=id + "-" + str(reaction_num)
+                        reaction_id="cmcc-" + subid + templ.format(reaction_num)
                     )
                 )
 
         return ParseDict(
             {
                 "name":name,
-                "dataset_id":id,
+                "dataset_id":"cmcc_dataset-"+id,
                 "reactions": protos
             },
             dataset_pb2.Dataset()
