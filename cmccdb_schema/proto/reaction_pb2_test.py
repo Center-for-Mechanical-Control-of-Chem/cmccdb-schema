@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.proto.reaction_pb2."""
+"""Tests for cmccdb_schema.proto.reaction_pb2."""
 
 import pytest
 
-from ord_schema.proto import reaction_pb2
+from cmccdb_schema.proto import reaction_pb2
 
 
 def test_simple():

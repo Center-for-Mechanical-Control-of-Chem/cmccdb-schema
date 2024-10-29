@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.scripts.check_pb."""
+"""Tests for cmccdb_schema.scripts.check_pb."""
 import docopt
 import pytest
 
-from ord_schema import message_helpers
-from ord_schema.proto import dataset_pb2
-from ord_schema.scripts import check_pb
+from cmccdb_schema import message_helpers
+from cmccdb_schema.proto import dataset_pb2
+from cmccdb_schema.scripts import check_pb
 
 
 def test_main_pass(tmp_path):

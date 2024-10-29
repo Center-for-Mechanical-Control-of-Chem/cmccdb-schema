@@ -15,8 +15,8 @@
 
 Example usage:
 
-from ord_schema.macros import workups
-from ord_schema.macros import solutions
+from cmccdb_schema.macros import workups
+from cmccdb_schema.macros import solutions
 
 The reaction was quenched with 300 ml of 0.5M NaHCO3 solution and the phases were separated.
 The aqueous layer was back-extracted twice with 100 ml of EtOAc. The organic layers were
@@ -43,8 +43,8 @@ reaction.workups.MergeFrom([
 """
 from collections.abc import Iterable
 
-from ord_schema import units
-from ord_schema.proto import reaction_pb2
+from cmccdb_schema import units
+from cmccdb_schema.proto import reaction_pb2
 
 UNITS_RESOLVER = units.UnitResolver()
 CONCENTRATION_RESOLVER = units.UnitResolver(units.CONCENTRATION_UNIT_SYNONYMS)

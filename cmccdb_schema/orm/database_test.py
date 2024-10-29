@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ord_schema.orm.database."""
+"""Tests for cmccdb_schema.orm.database."""
 import pytest
 from sqlalchemy import select
 
-from ord_schema.orm.database import delete_dataset, get_dataset_md5, get_dataset_size
-from ord_schema.orm.mappers import Mappers
-from ord_schema.proto import reaction_pb2
+from cmccdb_schema.orm.database import delete_dataset, get_dataset_md5, get_dataset_size
+from cmccdb_schema.orm.mappers import Mappers
+from cmccdb_schema.proto import reaction_pb2
 
 
 def test_orm(test_session):

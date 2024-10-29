@@ -133,7 +133,7 @@ def _validate_datasets(
 
 
 def validate_message(
-    message: ord_schema.Message,
+    message: cmccdb_schema.Message,
     recurse: bool = True,
     raise_on_error: bool = True,
     options: Optional[ValidationOptions] = None,
@@ -210,7 +210,7 @@ def validate_message(
 
 
 def _validate_message(
-    field: ord_schema.FieldDescriptor,
+    field: cmccdb_schema.FieldDescriptor,
     value: Any,
     output: ValidationOutput,
     raise_on_error: bool,
@@ -269,14 +269,14 @@ class ValidationWarning(Warning):
     pass
 
 
-def is_empty(message: ord_schema.Message):
+def is_empty(message: cmccdb_schema.Message):
     """Returns whether the given message is empty."""
     empty = type(message)().SerializeToString()
     return message.SerializeToString(deterministic=True) == empty
 
 
 # pylint: disable=missing-function-docstring
-def ensure_float_nonnegative(message: ord_schema.Message, field: str):
+def ensure_float_nonnegative(message: cmccdb_schema.Message, field: str):
     if getattr(message, field) < 0:
         warnings.warn(
             f"Field {field} of message " f"{type(message).DESCRIPTOR.name} must be non-negative",
@@ -285,7 +285,7 @@ def ensure_float_nonnegative(message: ord_schema.Message, field: str):
 
 
 def ensure_float_range(
-    message: ord_schema.Message,
+    message: cmccdb_schema.Message,
     field: str,
     min_value: float = -math.inf,
     max_value: float = math.inf,
@@ -299,7 +299,7 @@ def ensure_float_range(
         )
 
 
-def check_value_and_units(message: ord_schema.UnitMessage):
+def check_value_and_units(message: cmccdb_schema.UnitMessage):
     """Checks that value/units messages are complete."""
     if not message.HasField("value"):
         warnings.warn(f"{type(message)} requires `value` to be set", ValidationError)
@@ -307,7 +307,7 @@ def check_value_and_units(message: ord_schema.UnitMessage):
         warnings.warn(f"{type(message)} requires `units` to be set", ValidationError)
 
 
-def check_type_and_details(message: ord_schema.TypeDetailsMessage):
+def check_type_and_details(message: cmccdb_schema.TypeDetailsMessage):
     """Checks that type/details messages are complete."""
     if is_empty(message):
         return
@@ -1107,7 +1107,7 @@ def validate_percentage(message: reaction_pb2.Percentage):
     ensure_float_nonnegative(message, "precision")
 
 
-def validate_float_value(message: ord_schema.Message):
+def validate_float_value(message: cmccdb_schema.Message):
     ensure_float_nonnegative(message, "precision")
 
 

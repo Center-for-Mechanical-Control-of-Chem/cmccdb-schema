@@ -23,10 +23,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NotSupportedError, OperationalError
 from sqlalchemy.orm import Session
 
-from ord_schema.logging_helpers import get_logger
-from ord_schema.orm.mappers import Base, Mappers, from_proto
-from ord_schema.orm.rdkit_mappers import CString, FingerprintType, RDKitMol, RDKitReaction
-from ord_schema.proto import dataset_pb2
+from cmccdb_schema.logging_helpers import get_logger
+from cmccdb_schema.orm.mappers import Base, Mappers, from_proto
+from cmccdb_schema.orm.rdkit_mappers import CString, FingerprintType, RDKitMol, RDKitReaction
+from cmccdb_schema.proto import dataset_pb2
 
 logger = get_logger(__name__)
 

@@ -207,7 +207,7 @@ def build_data(filename: str, description: str) -> reaction_pb2.Data:
     return data
 
 
-def find_submessages(message: ord_schema.Message, submessage_type: Type[MessageType]) -> list[MessageType]:
+def find_submessages(message: cmccdb_schema.Message, submessage_type: Type[MessageType]) -> list[MessageType]:
     """Recursively finds all submessages of a specified type.
 
     Args:
@@ -220,7 +220,7 @@ def find_submessages(message: ord_schema.Message, submessage_type: Type[MessageT
     Raises:
         TypeError: if `submessage_type` is not a protocol buffer type.
     """
-    if not issubclass(submessage_type, ord_schema.Message):
+    if not issubclass(submessage_type, cmccdb_schema.Message):
         raise TypeError("submessage_type must be a Protocol Buffer type")
     submessage_name = submessage_type.DESCRIPTOR.full_name
     submessages = []
@@ -740,7 +740,7 @@ def fetch_dataset(dataset_id: str, timeout: float = 10.0) -> dataset_pb2.Dataset
         RuntimeError: If the request fails.
         ValueError: If the dataset ID is invalid.
     """
-    from ord_schema import validations  # Avoid circular import; pylint: disable=import-outside-toplevel.
+    from cmccdb_schema import validations  # Avoid circular import; pylint: disable=import-outside-toplevel.
 
     if not validations.is_valid_dataset_id(dataset_id):
         raise ValueError(f"Invalid dataset ID: {dataset_id}")
@@ -796,7 +796,7 @@ def load_message(filename: str, message_type: Type[MessageType]) -> MessageType:
 # pylint: enable=inconsistent-return-statements
 
 
-def write_message(message: ord_schema.Message, filename: str):
+def write_message(message: cmccdb_schema.Message, filename: str):
     """Writes a protocol buffer message to disk.
 
     Args:
@@ -840,7 +840,7 @@ def id_filename(filename: str) -> str:
     return security.safe_join("data", suffix[:2], basename)
 
 
-def create_message(message_name: str) -> ord_schema.Message:
+def create_message(message_name: str) -> cmccdb_schema.Message:
     """Converts a message name into an instantiation of that class, where
     the message belongs to the reaction_pb2 module.
 
@@ -888,7 +888,7 @@ def messages_to_dataframe(messages: Iterable[ord_schema.Message], drop_constant_
     return df
 
 
-def message_to_row(message: ord_schema.Message, trace: Optional[tuple[str]] = None) -> dict[str, ord_schema.ScalarType]:
+def message_to_row(message: cmccdb_schema.Message, trace: Optional[tuple[str]] = None) -> dict[str, cmccdb_schema.ScalarType]:
     """Converts a proto into a flat dictionary mapping fields to values.
 
     The keys indicate any nesting; for instance a proto that looks like this:
@@ -941,10 +941,10 @@ def safe_update(target: dict, update: Mapping) -> None:
 
 
 def _message_to_row(
-    field: ord_schema.FieldDescriptor,
-    value: Union[ord_schema.Message, ord_schema.ScalarType],
+    field: cmccdb_schema.FieldDescriptor,
+    value: Union[ord_schema.Message, cmccdb_schema.ScalarType],
     trace: tuple[str],
-) -> dict[str, ord_schema.ScalarType]:
+) -> dict[str, cmccdb_schema.ScalarType]:
     """Recursively creates a dict for a single value.
 
     Args:

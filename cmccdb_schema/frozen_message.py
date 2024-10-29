@@ -21,7 +21,7 @@ from . import type_info as ord_schema
 
 _MESSAGE_TYPES = (
     collections.abc.MutableMapping,  # Proto map.
-    ord_schema.Message,  # Generic submessage.
+    cmccdb_schema.Message,  # Generic submessage.
 )
 
 # pytype: disable=attribute-error

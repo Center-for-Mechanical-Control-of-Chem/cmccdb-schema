@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ord_schema.orm.mappers."""
+"""Tests for cmccdb_schema.orm.mappers."""
 import os
 
 import pytest
 
-from ord_schema.message_helpers import load_message
-from ord_schema.orm.mappers import from_proto, to_proto
-from ord_schema.proto.dataset_pb2 import Dataset
+from cmccdb_schema.message_helpers import load_message
+from cmccdb_schema.orm.mappers import from_proto, to_proto
+from cmccdb_schema.proto.dataset_pb2 import Dataset
 
 
 @pytest.mark.parametrize(

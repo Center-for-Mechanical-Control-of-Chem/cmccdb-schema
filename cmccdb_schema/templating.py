@@ -57,7 +57,7 @@ def _is_null(value: Union[float, str]) -> bool:
     return pd.isnull(value) or (isinstance(value, str) and (value == "nan" or not value.strip()))
 
 
-def _fill_template(string: str, substitutions: Mapping[str, ord_schema.ScalarType]) -> reaction_pb2.Reaction:
+def _fill_template(string: str, substitutions: Mapping[str, cmccdb_schema.ScalarType]) -> reaction_pb2.Reaction:
     """Performs substring substitutions according to a dictionary.
 
     If any pattern has a null replacement value (i.e. this is an empty cell in

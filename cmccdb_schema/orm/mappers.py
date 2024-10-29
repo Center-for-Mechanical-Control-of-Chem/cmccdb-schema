@@ -39,11 +39,11 @@ from sqlalchemy import Boolean, Column, Enum, Float, ForeignKey, Integer, LargeB
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
-import ord_schema.orm.rdkit_mappers  # pylint: disable=unused-import
-from ord_schema import message_helpers
-from ord_schema.logging_helpers import get_logger
-from ord_schema.orm import Base
-from ord_schema.proto import dataset_pb2, reaction_pb2
+import cmccdb_schema.orm.rdkit_mappers  # pylint: disable=unused-import
+from cmccdb_schema import message_helpers
+from cmccdb_schema.logging_helpers import get_logger
+from cmccdb_schema.orm import Base
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 logger = get_logger(__name__)
 

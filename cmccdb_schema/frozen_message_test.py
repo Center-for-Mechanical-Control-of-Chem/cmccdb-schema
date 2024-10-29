@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.frozen_storage."""
+"""Tests for cmccdb_schema.frozen_storage."""
 
 import dataclasses
 import os
@@ -19,8 +19,8 @@ import tempfile
 
 import pytest
 
-from ord_schema import frozen_message, message_helpers
-from ord_schema.proto import reaction_pb2, test_pb2
+from cmccdb_schema import frozen_message, message_helpers
+from cmccdb_schema.proto import reaction_pb2, test_pb2
 
 
 def _freeze(message) -> frozen_message.FrozenMessage:

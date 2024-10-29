@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ord_schema.orm.rdkit_mappers."""
+"""Tests for cmccdb_schema.orm.rdkit_mappers."""
 import platform
 
 import pytest
 from sqlalchemy import func, select
 
-from ord_schema.orm.mappers import Mappers
-from ord_schema.orm.rdkit_mappers import FingerprintType, RDKitMol, RDKitReaction
+from cmccdb_schema.orm.mappers import Mappers
+from cmccdb_schema.orm.rdkit_mappers import FingerprintType, RDKitMol, RDKitReaction
 
 pytestmark = pytest.mark.skipif(platform.machine() != "x86_64", reason="RDKit cartridge is required")
 

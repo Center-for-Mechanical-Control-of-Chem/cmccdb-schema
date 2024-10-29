@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.scripts.validate_dataset."""
+"""Tests for cmccdb_schema.scripts.validate_dataset."""
 import os
 
 import docopt
 import pytest
 
-from ord_schema import message_helpers, validations
-from ord_schema.proto import dataset_pb2, reaction_pb2
-from ord_schema.scripts import validate_dataset
+from cmccdb_schema import message_helpers, validations
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
+from cmccdb_schema.scripts import validate_dataset
 
 
 @pytest.fixture

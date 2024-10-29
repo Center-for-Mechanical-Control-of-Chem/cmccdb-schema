@@ -26,9 +26,9 @@ import os
 import docopt
 import requests
 
-from ord_schema import message_helpers
-from ord_schema.logging import get_logger
-from ord_schema.proto import dataset_pb2
+from cmccdb_schema import message_helpers
+from cmccdb_schema.logging import get_logger
+from cmccdb_schema.proto import dataset_pb2
 
 logger = get_logger(__name__)
 

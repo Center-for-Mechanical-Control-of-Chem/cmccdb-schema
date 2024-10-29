@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.updates."""
+"""Tests for cmccdb_schema.updates."""
 
 import pytest
 
-from ord_schema import updates
-from ord_schema.proto import dataset_pb2, reaction_pb2
+from cmccdb_schema import updates
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 
 class TestUpdateReaction:

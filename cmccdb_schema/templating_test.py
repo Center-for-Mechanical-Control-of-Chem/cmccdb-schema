@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.templating."""
+"""Tests for cmccdb_schema.templating."""
 
 import pandas as pd
 import pytest
 from google.protobuf import text_format
 from rdkit import Chem
 
-from ord_schema import templating
-from ord_schema.proto import dataset_pb2, reaction_pb2
+from cmccdb_schema import templating
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 
 @pytest.fixture

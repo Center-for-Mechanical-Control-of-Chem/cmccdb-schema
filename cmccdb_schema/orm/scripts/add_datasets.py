@@ -41,10 +41,10 @@ from rdkit import RDLogger
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from ord_schema.logging_helpers import get_logger
-from ord_schema.message_helpers import load_message
-from ord_schema.orm.database import add_dataset, delete_dataset, get_connection_string, get_dataset_md5
-from ord_schema.proto import dataset_pb2
+from cmccdb_schema.logging_helpers import get_logger
+from cmccdb_schema.message_helpers import load_message
+from cmccdb_schema.orm.database import add_dataset, delete_dataset, get_connection_string, get_dataset_md5
+from cmccdb_schema.proto import dataset_pb2
 
 logger = get_logger(__name__)
 

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.validations."""
+"""Tests for cmccdb_schema.validations."""
 
 import sys
 import warnings
@@ -19,8 +19,8 @@ import warnings
 import pytest
 from google.protobuf import text_format
 
-from ord_schema import validations
-from ord_schema.proto import dataset_pb2, reaction_pb2
+from cmccdb_schema import validations
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 # pylint: disable=too-many-public-methods
 

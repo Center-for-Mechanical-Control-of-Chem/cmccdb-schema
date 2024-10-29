@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.macros.solutions."""
+"""Tests for cmccdb_schema.macros.solutions."""
 import itertools
 
 import pytest
 from google.protobuf import text_format
 
-from ord_schema import validations
-from ord_schema.macros import solutions
-from ord_schema.proto import reaction_pb2
+from cmccdb_schema import validations
+from cmccdb_schema.macros import solutions
+from cmccdb_schema.proto import reaction_pb2
 
 
 def test_simple_solution():

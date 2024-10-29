@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ord_schema.orm.scripts.add_datasets."""
+"""Tests for cmccdb_schema.orm.scripts.add_datasets."""
 import os
 
 import docopt
@@ -20,8 +20,8 @@ import pytest
 from sqlalchemy import create_engine
 from testing.postgresql import Postgresql
 
-from ord_schema.orm.database import prepare_database
-from ord_schema.orm.scripts import add_datasets
+from cmccdb_schema.orm.database import prepare_database
+from cmccdb_schema.orm.scripts import add_datasets
 
 
 def test_main():

@@ -56,9 +56,9 @@ import docopt
 import github
 from rdkit import RDLogger
 
-from ord_schema import message_helpers, updates, validations
-from ord_schema.logging_helpers import get_logger
-from ord_schema.proto import dataset_pb2
+from cmccdb_schema import message_helpers, updates, validations
+from cmccdb_schema.logging_helpers import get_logger
+from cmccdb_schema.proto import dataset_pb2
 
 logger = get_logger(__name__)
 

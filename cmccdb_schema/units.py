@@ -251,7 +251,7 @@ class UnitResolver:
         # value and the unit is optional.
         self._pattern = re.compile(r"(-?\d+\.?\d*(?:[eE]-?\d+)?)(?:[-±](-?\d+\.?\d*))?\s*([\w\sμ°]+)\.?")
 
-    def resolve(self, string: str, allow_range: bool = False) -> ord_schema.UnitMessage:
+    def resolve(self, string: str, allow_range: bool = False) -> cmccdb_schema.UnitMessage:
         """Resolves a string into a message containing a value with units.
 
         Args:
@@ -294,7 +294,7 @@ class UnitResolver:
             return message(value=value, precision=precision, units=unit)
         return message(value=value, units=unit)
 
-    def resolve_unit(self, string_unit: str) -> Tuple[ord_schema.UnitMessage, ord_schema.Message]:
+    def resolve_unit(self, string_unit: str) -> Tuple[ord_schema.UnitMessage, cmccdb_schema.Message]:
         """Resolves a unit string into its message type and unit ENUM value.
 
         Args:
@@ -314,7 +314,7 @@ class UnitResolver:
         message, unit = self._resolver[string_unit]
         return (message, unit)
 
-    def convert(self, message: ord_schema.UnitMessage, new_units: Union[str, int]) -> ord_schema.UnitMessage:
+    def convert(self, message: cmccdb_schema.UnitMessage, new_units: Union[str, int]) -> cmccdb_schema.UnitMessage:
         """Converts a united message into another united message of the same
         type, but with different units.
 
@@ -392,7 +392,7 @@ class UnitResolver:
         return new_message
 
 
-def format_message(message: ord_schema.UnitMessage) -> Optional[str]:
+def format_message(message: cmccdb_schema.UnitMessage) -> Optional[str]:
     """Formats a united message into a string.
 
     Args:

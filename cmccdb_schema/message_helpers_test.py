@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for ord_schema.message_helpers."""
+"""Tests for cmccdb_schema.message_helpers."""
 
 import tempfile
 import time
@@ -21,8 +21,8 @@ import pytest
 from google.protobuf import json_format, text_format
 from rdkit import Chem
 
-from ord_schema import message_helpers
-from ord_schema.proto import reaction_pb2, test_pb2
+from cmccdb_schema import message_helpers
+from cmccdb_schema.proto import reaction_pb2, test_pb2
 
 _BENZENE_MOLBLOCK = """241
   -OEChem-07232015262D

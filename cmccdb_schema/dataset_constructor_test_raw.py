@@ -6,9 +6,9 @@ if __name__ == "__main__":
     for _ in range(2): root = os.path.dirname(root)
     sys.path.insert(0, root)
 
-    from ord_schema import dataset_constructor
-    from ord_schema.proto import reaction_pb2
-    from ord_schema import validations
+    from cmccdb_schema import dataset_constructor
+    from cmccdb_schema.proto import reaction_pb2
+    from cmccdb_schema import validations
 
     rxns = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         # os.path.join(os.path.dirname(__file__), "../../cmccdb-data/extended_template.csv"),

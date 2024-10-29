@@ -42,10 +42,10 @@ import docopt
 import joblib
 from rdkit import RDLogger
 
-import ord_schema.type_info as ord_schema
-from ord_schema import message_helpers, units, validations
-from ord_schema.logging_helpers import get_logger
-from ord_schema.proto import dataset_pb2, reaction_pb2
+import cmccdb_schema.type_info as ord_schema
+from cmccdb_schema import message_helpers, units, validations
+from cmccdb_schema.logging_helpers import get_logger
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 logger = get_logger(__name__)
 RDLogger.DisableLog("rdApp.*")  # Disable RDKit logging.
@@ -153,7 +153,7 @@ def get_molecule_id(root: ElementTree.Element) -> str:
     return molecules[0].attrib["id"]
 
 
-def resolve_units(value: str) -> ord_schema.UnitMessage:
+def resolve_units(value: str) -> cmccdb_schema.UnitMessage:
     """Resolves a value/unit string."""
     for key, replacement in UNIT_REPLACEMENTS.items():
         value = value.replace(key, replacement)
