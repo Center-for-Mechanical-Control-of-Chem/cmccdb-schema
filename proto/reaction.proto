@@ -15,7 +15,7 @@
 // Schema for the Open Reaction Database.
 syntax = "proto3";
 
-package cmccdb;
+package ord;
 
 /**
  * Throughout this schema, we introduce enums to encourage consistency in
@@ -154,6 +154,9 @@ message ReactionInput {
       ADDITION_FUNNEL = 5;
       PIPETTE = 6;
       POSITIVE_DISPLACEMENT_PIPETTE = 7;
+      PISTON_PUMP = 8;
+      SYRINGE_PUMP = 9;
+      PERISTALTIC_PUMP = 10;
     }
     AdditionDeviceType type = 1;
     // Specify, e.g., "gas-tight" for SYRINGE or cannula material.
@@ -432,8 +435,7 @@ message Vessel {
     PRESSURE_FLASK = 10;  // E.g., sealed tube
     PRESSURE_REACTOR = 11;  // High-pressure (e.g., Parr bomb reactor)
     ELECTROCHEMICAL_CELL = 12;
-    BALL = 13;
-}
+  }
   VesselType type = 1;
   // Include details such as "multi-neck" for ROUND_BOTTOM_FLASK,
   // "J. Young" for NMR_TUBE, etc.
@@ -542,16 +544,15 @@ message ReactionConditions {
   StirringConditions stirring = 3;
   IlluminationConditions illumination = 4;
   ElectrochemistryConditions electrochemistry = 5;
-  MechanochemistryConditions mechanochemistry = 6;
-  FlowConditions flow = 7;
-  optional bool reflux = 8;
-  optional float ph = 9;
+  FlowConditions flow = 6;
+  optional bool reflux = 7;
+  optional float ph = 8;
   // Boolean to describe whether the conditions cannot be
   // represented by the static, single-step schema.
-  optional bool conditions_are_dynamic = 10;
+  optional bool conditions_are_dynamic = 9;
   // A catch-all string field for providing more information about
   // the conditions (e.g., multiple stages)
-  string details = 11;
+  string details = 10;
 }
 
 message TemperatureConditions {
@@ -726,26 +727,6 @@ message ElectrochemistryConditions {
     string details = 2;
   }
   ElectrochemistryCell cell = 9;
-}
-
-message MechanochemistryConditions {
-  enum MechanochemistryType {
-    UNSPECIFIED = 0;
-    CUSTOM = 1;
-    TIP_ARRAY = 2;
-    BALL_MILL = 3;
-    HAND_GRIND = 4;
-    TWIN_SCREW = 5;
-    ANVIL_CELL = 6;
-  }
-  MechanochemistryType type = 1;
-  string details = 2;
-  optional Frequency frequency = 3;
-  optional Force force = 4;
-  optional Time duration = 5;
-  optional string ball_material = 6;
-  optional bool liquid_assisted = 7;
-  optional string cell_material = 8;
 }
 
 message FlowConditions {
@@ -1188,28 +1169,6 @@ message Time {
   // Precision of the measurement (with the same units as `value`).
   optional float precision = 2;
   TimeUnit units = 3;
-}
-message Force {
- enum ForceUnit {
-    UNSPECIFIED = 0;
-    NEWTON = 1;
-    MILLINEWTON = 2;
-  }
-  optional float value = 1;
-  // Precision of the measurement (with the same units as `value`).
-  optional float precision = 2;
-  ForceUnit units = 3;
-}
-message Frequency {
- enum FrequencyUnit {
-    UNSPECIFIED = 0;
-    HERTZ = 1;
-    RPM = 2;
-  }
-  optional float value = 1;
-  // Precision of the measurement (with the same units as `value`).
-  optional float precision = 2;
-  FrequencyUnit units = 3;
 }
 message Mass {
   enum MassUnit {
