@@ -22,3 +22,6 @@ protoc \
   --pyi_out=. \
   --js_out=import_style=commonjs,binary:js \
   ../ord-schema/proto/*.proto
+
+echo "WARNING: due to current code structure, you will need to run `protoParsing.nb` to rebuild `parallel_proto.py`"
+echo "WARNING: due to Google proto version issues, you will need to edit `ord_schema/proto/dataset_pb2.py` and `ord_schema/proto/reaction_pb2.py`"

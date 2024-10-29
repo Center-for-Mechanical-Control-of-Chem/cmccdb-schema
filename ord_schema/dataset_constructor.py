@@ -690,6 +690,21 @@ class ProtoHandler:
             "percentage":cls.parallel_proto.Percentage,
             "unitless":cls.parallel_proto.FloatValue
         }
+    @classmethod
+    def get_unique_keys(cls, root_type, bad_names=None):
+        names = set()
+        if bad_names is None:
+            bad_names = set()
+        for field in cls.field_iter(root_type):
+            k = field.name
+            subnames, _ = cls.get_unique_keys(cls.get_field_type(root_type, k).value_type, bad_names)
+            if k in subnames:
+                bad_names.add(k)
+            else:
+               subnames.add(k)
+            bad_names.update(names & subnames)
+            names.update(subnames - bad_names)
+        return names, bad_names
 
     @classmethod
     def get_reaction_conditions_map(cls):
@@ -783,7 +798,7 @@ class ProtoHandler:
         bfs_queue.append([[root_type], []])
 
         while bfs_queue:
-            path, keys = bfs_queue.pop()
+            path, keys = bfs_queue.popleft()
             root = path[-1]
             for field in cls.field_iter(root.value_type):
                 field_type = cls.resolve_type(field.type)
@@ -805,6 +820,7 @@ class ProtoHandler:
                     for s in
                     ['reactant', 'reagent', 'workup', 'authentic_standard', 'catalyst', 'internal_standard', 'solvent']
                 },
+                temperature=(["conditions", "temperature", "measurements"], None),
                 **{
                     s: (["outcomes", "products"], {"reaction_role":role_map[s]})
                     for s in ['byproduct', 'side_product', 'product']
@@ -846,6 +862,10 @@ class ProtoHandler:
         default_paths = cls.get_default_paths()
         if key_name in default_paths.get(root_type.value_type, []):
             return default_paths[root_type.value_type][key_name]
+
+        unames, bad_names = cls.get_unique_keys(root_type.value_type)
+        if key_name in bad_names:
+            raise ValueError(f"can't find unique insertion spot for {key_name}")
 
         id_map = cls.get_identifier_type_map()
         def test(field_name, field_type, full_path, key_path):
