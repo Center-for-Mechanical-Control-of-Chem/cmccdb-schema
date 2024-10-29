@@ -877,7 +877,7 @@ class ElectrochemistryConditions(_message.Message):
     def __init__(self, type: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryType, str]] = ..., details: _Optional[str] = ..., current: _Optional[_Union[Current, _Mapping]] = ..., voltage: _Optional[_Union[Voltage, _Mapping]] = ..., anode_material: _Optional[str] = ..., cathode_material: _Optional[str] = ..., electrode_separation: _Optional[_Union[Length, _Mapping]] = ..., measurements: _Optional[_Iterable[_Union[ElectrochemistryConditions.ElectrochemistryMeasurement, _Mapping]]] = ..., cell: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryCell, _Mapping]] = ...) -> None: ...
 
 class MechanochemistryConditions(_message.Message):
-    __slots__ = ("type", "frequency", "force", "ball_material", "duration", "liquid_assisted", "details")
+    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "liquid_assisted", "cell_material")
     class MechanochemistryType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         UNSPECIFIED: _ClassVar[MechanochemistryConditions.MechanochemistryType]
@@ -886,27 +886,31 @@ class MechanochemistryConditions(_message.Message):
         BALL_MILL: _ClassVar[MechanochemistryConditions.MechanochemistryType]
         HAND_GRIND: _ClassVar[MechanochemistryConditions.MechanochemistryType]
         TWIN_SCREW: _ClassVar[MechanochemistryConditions.MechanochemistryType]
+        ANVIL_CELL: _ClassVar[MechanochemistryConditions.MechanochemistryType]
     UNSPECIFIED: MechanochemistryConditions.MechanochemistryType
     CUSTOM: MechanochemistryConditions.MechanochemistryType
     TIP_ARRAY: MechanochemistryConditions.MechanochemistryType
     BALL_MILL: MechanochemistryConditions.MechanochemistryType
     HAND_GRIND: MechanochemistryConditions.MechanochemistryType
     TWIN_SCREW: MechanochemistryConditions.MechanochemistryType
+    ANVIL_CELL: MechanochemistryConditions.MechanochemistryType
     TYPE_FIELD_NUMBER: _ClassVar[int]
+    DETAILS_FIELD_NUMBER: _ClassVar[int]
     FREQUENCY_FIELD_NUMBER: _ClassVar[int]
     FORCE_FIELD_NUMBER: _ClassVar[int]
-    BALL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
     DURATION_FIELD_NUMBER: _ClassVar[int]
+    BALL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
     LIQUID_ASSISTED_FIELD_NUMBER: _ClassVar[int]
-    DETAILS_FIELD_NUMBER: _ClassVar[int]
+    CELL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
     type: MechanochemistryConditions.MechanochemistryType
+    details: str
     frequency: Frequency
     force: Force
-    ball_material: str
     duration: Time
+    ball_material: str
     liquid_assisted: bool
-    details: str
-    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., ball_material: _Optional[str] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., liquid_assisted: bool = ..., details: _Optional[str] = ...) -> None: ...
+    cell_material: str
+    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., liquid_assisted: bool = ..., cell_material: _Optional[str] = ...) -> None: ...
 
 class FlowConditions(_message.Message):
     __slots__ = ("type", "details", "pump_type", "tubing")

@@ -271,6 +271,7 @@ class MechanochemistryType(enum.Enum):
   BALL_MILL = "ball_mill"
   HAND_GRIND = "hand_grind"
   TWIN_SCREW = "twin_screw"
+  ANVIL_CELL = "anvil_cell"
 
 class FlowType(enum.Enum):
   UNSPECIFIED = "unspecified"
@@ -729,6 +730,7 @@ class MechanochemistryConditions:
   force: 'Force' = None
   frequency: 'Frequency' = None
   ball_material: 'str' = None
+  cell_material: 'str' = None
   duration: 'Time' = None
 
 @dataclasses.dataclass

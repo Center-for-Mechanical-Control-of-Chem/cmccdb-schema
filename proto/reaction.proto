@@ -15,7 +15,7 @@
 // Schema for the Open Reaction Database.
 syntax = "proto3";
 
-package ord;
+package cmccdb;
 
 /**
  * Throughout this schema, we introduce enums to encourage consistency in
@@ -736,14 +736,16 @@ message MechanochemistryConditions {
     BALL_MILL = 3;
     HAND_GRIND = 4;
     TWIN_SCREW = 5;
+    ANVIL_CELL = 6;
   }
   MechanochemistryType type = 1;
+  string details = 2;
   optional Frequency frequency = 3;
   optional Force force = 4;
-  optional string ball_material = 5;
-  optional Time duration = 6;
+  optional Time duration = 5;
+  optional string ball_material = 6;
   optional bool liquid_assisted = 7;
-  string details = 8;
+  optional string cell_material = 8;
 }
 
 message FlowConditions {

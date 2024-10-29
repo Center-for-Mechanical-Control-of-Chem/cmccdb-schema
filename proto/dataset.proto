@@ -15,9 +15,9 @@
 // Protocol buffer messages for reaction datasets.
 syntax = "proto3";
 
-package ord;
+package cmccdb;
 
-import "ord-schema/proto/reaction.proto";
+import "cmccdb-schema/proto/reaction.proto";
 
 // A Dataset is a collection of Reaction message that is used to group reactions
 // together into a logical unit along with relevant metadata or scripts for
