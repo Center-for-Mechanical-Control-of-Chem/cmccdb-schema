@@ -451,6 +451,7 @@ class ProtoTemplater:
             }
         else:
             validator_tree = None
+        modification_tree = {}
         for path, val in zip(self.template_paths, values):
             if validator_tree is not None:
                 vtree = validator_tree
@@ -459,8 +460,11 @@ class ProtoTemplater:
             parent_tree = None
             subtree = copy_tree
             base_tree = self.spec
+            mod_tree = modification_tree
             p = None
             for p in path[:-1]:
+                if p not in mod_tree:
+                    mod_tree[p] = {}
                 if subtree[p] is base_tree[p]:
                     subtree[p] = subtree[p].copy()
                 if vtree is not None:
@@ -474,6 +478,7 @@ class ProtoTemplater:
                 parent_tree = subtree
                 subtree = subtree[p]
                 base_tree = base_tree[p]
+                mod_tree = mod_tree[p]
 
             if vtree is not None:
                 valid, val = self.validate_value(vtree["_value"], path[-1], val)
@@ -492,8 +497,37 @@ class ProtoTemplater:
                         subtree[path[-1]] = Placeholders.InvalidParameterPlaceholder
                 else:
                     subtree[path[-1]] = val
+                    mod_tree[path[-1]] = True
             else:
                 subtree[path[-1]] = val
+                mod_tree[path[-1]] = True
+
+        copy_tree = self.coprune_trees(copy_tree, modification_tree)
+        return copy_tree
+    @classmethod
+    def check_prunable_subtree(cls, subtree, cache):
+        key = id(subtree)
+        if key not in cache:
+            if subtree is True:
+                cache[key] = False
+            elif len(subtree) == 0:
+                cache[key] = True
+            else:
+                cache[key] = all(
+                    cls.check_prunable_subtree(t, cache)
+                    for t in subtree.values()
+                )
+        return cache[key]
+    @classmethod
+    def coprune_trees(cls, copy_tree, mod_tree, pruning_cache=None):
+        if pruning_cache is None:
+            pruning_cache = {}
+        for p,subtree in mod_tree.items():
+            if subtree is True: continue
+            if cls.check_prunable_subtree(subtree, pruning_cache):
+                del copy_tree[p]
+            else:
+                cls.coprune_trees(copy_tree[p], subtree, pruning_cache=pruning_cache)
         return copy_tree
 
     @classmethod
@@ -513,7 +547,6 @@ class ProtoTemplater:
                             prepped = cls.prep_proto(vv["value"])
                             if prepped is Placeholders.InvalidParameterPlaceholder: continue
                             subv[vv["key"]] = prepped
-                            vv["key"]:cls.prep_proto(vv["value"])
                         if len(subv) > 0:
                             new[k] = subv
                     else:
@@ -1392,13 +1425,15 @@ class DatasetConstructor:
         for parser, data in parser_data:
             for row in data:
                 reaction_num += 1
+                templated_proto = parser.template.apply(
+                    cls.sanitize_csv_data(row, len(parser.template.template_paths))
+                )
+                stripped_missings = ProtoTemplater.prep_proto(
+                    templated_proto
+                )
                 protos.append(
                     dict(
-                        ProtoTemplater.prep_proto(
-                            parser.template.apply(
-                                cls.sanitize_csv_data(row, len(parser.template.template_paths))
-                            )
-                        ),
+                        stripped_missings,
                         reaction_id="cmcc-" + subid + templ.format(reaction_num)
                     )
                 )
