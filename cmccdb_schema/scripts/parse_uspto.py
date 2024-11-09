@@ -42,7 +42,7 @@ import docopt
 import joblib
 from rdkit import RDLogger
 
-import cmccdb_schema.type_info as ord_schema
+import cmccdb_schema.type_info as cmccdb_schema
 from cmccdb_schema import message_helpers, units, validations
 from cmccdb_schema.logging_helpers import get_logger
 from cmccdb_schema.proto import dataset_pb2, reaction_pb2

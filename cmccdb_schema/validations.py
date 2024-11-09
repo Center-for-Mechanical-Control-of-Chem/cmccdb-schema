@@ -24,8 +24,8 @@ from typing import Any, Optional
 from rdkit import Chem
 from rdkit import __version__ as RDKIT_VERSION
 
-# import ord_schema
-from . import type_info as ord_schema
+# import cmccdb_schema
+from . import type_info as cmccdb_schema
 from . import message_helpers
 from .logging_helpers import get_logger
 from .proto import dataset_pb2, reaction_pb2

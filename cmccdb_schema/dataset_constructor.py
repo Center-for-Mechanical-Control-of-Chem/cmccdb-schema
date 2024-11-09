@@ -9,6 +9,7 @@ class Placeholders(enum.Enum):
     TemplateKey = "key"
     TemplateParameter = "$tp"
     InvalidParameterPlaceholder = "-invalid-"
+    OptionalParameterPlaceholder = "-optional-"
 
 unit_aliases = {
     "%":"percentage",
@@ -100,7 +101,7 @@ class ProtoMessage:
             else:
                 raise ValueError("???")
         else:
-            field_names = [f.name for f in dataclasses.fields(self.type)]
+            field_names = [f.name for f in ProtoHandler.field_iter(self.type)]
             if field_name not in field_names:
                 raise ValueError("bad field '{}' for type {} (allowed fields are {})".format(field_name, self.type, field_names))
 
@@ -419,7 +420,7 @@ class ProtoTemplater:
     def validate_value(self, validator, key, value):
         valid = True
         if key == "type":
-            if value == "":
+            if value.lower() in {"", "n/a", "unspecified"}:
                 value = "UNSPECIFIED"
             else:
                 if isinstance(validator, ProtoMessage):
@@ -429,10 +430,11 @@ class ProtoTemplater:
                 else:
                     raise ValueError("unexpected validator {}".format(validator))
                 value, _ = normalize_key(value)
-                value = ProtoHandler.get_enum_values_map().get(
+                enum_types = ProtoHandler.get_enum_values_map().get(
                     validator_type.value_type,
-                    {value:value}
-                )[value]
+                    {}
+                )
+                value = enum_types.get(value, value)
         elif isinstance(value, str) and value == "":
             valid = False
         return valid, value
@@ -478,6 +480,7 @@ class ProtoTemplater:
                 if not valid:
                     if isinstance(subtree, dict):
                         if (
+
                                 path[-1] == "value"
                                 and len(subtree) == 2
                                 and ("units" in subtree or "type" in subtree)
@@ -542,7 +545,45 @@ class ProtoTemplater:
         return rxn
 
 class ProtoHandler:
-    from .proto import parallel_proto # TODO: should use the real proto eventually, but this works for now
+    # from .proto import parallel_proto # TODO: should use the real proto eventually, but this works for now
+    class GProtoDescriptorWrapper:
+        descriptor_pool = {}
+        @classmethod
+        def lookup(cls, desc):
+            if desc not in cls.descriptor_pool:
+                cls.descriptor_pool[desc] = cls(desc)
+            return cls.descriptor_pool[desc]
+        def __init__(self, desc):
+            self.desc = desc
+            self.__name__ = self.desc.name
+        def __repr__(self):
+            return self.__name__
+        def __hash__(self):
+            return hash(self.desc)
+        def is_message_type(self):
+            from google.protobuf.descriptor import EnumDescriptor, OneofDescriptor
+            return not isinstance(self.desc, (EnumDescriptor, OneofDescriptor))
+        def is_enum_type(self):
+            from google.protobuf.descriptor import EnumDescriptor
+            return isinstance(self.desc, EnumDescriptor)
+        def is_oneof_type(self):
+            from google.protobuf.descriptor import OneofDescriptor
+            return isinstance(self.desc, OneofDescriptor)
+    try:
+        from .proto import reaction_pb2 as parallel_proto
+    except ImportError:
+        from .proto import parallel_proto
+        reaction_type = parallel_proto.Reaction
+        reaction_role_type = parallel_proto.ReactionRoleType
+    else:
+        reaction_type = GProtoDescriptorWrapper.lookup(parallel_proto.Reaction.DESCRIPTOR)
+        reaction_role_type = GProtoDescriptorWrapper.lookup(parallel_proto.ReactionRole.ReactionRoleType.DESCRIPTOR)
+    @classmethod
+    def get_base_type(cls, type_name):
+        if hasattr(cls.parallel_proto, "DESCRIPTOR"):
+            return cls.GProtoDescriptorWrapper.lookup(getattr(cls.parallel_proto, type_name).DESCRIPTOR)
+        else:
+            return getattr(cls.parallel_proto, type_name)
 
     _proto_map = None
     _alias_map = None
@@ -564,8 +605,10 @@ class ProtoHandler:
         "float":float,
         "bytes":bytes
     }
+
     @classmethod
     def build_proto_map(cls, root):
+        raise NotImplementedError(...)
         map = {}
         type_aliases = {}
         bad_aliases = set()
@@ -580,7 +623,7 @@ class ProtoHandler:
             if field_type in cls.atomic_types_map:
                 map[field.name] = cls.atomic_types_map[field_type]
             else:
-                subtype = getattr(cls.parallel_proto, field_type)
+                subtype = cls.resolve_type(field_type)
                 if dataclasses.is_dataclass(subtype):
                     submap, subaliases, subbad_aliases = cls.build_proto_map(subtype)
                     map[field.name] = submap
@@ -633,34 +676,121 @@ class ProtoHandler:
         kinds_types = {}
         units_types = {}
         enum_types = {}
-        for type_name in cls.parallel_proto.__all__:
-            type_obj = getattr(cls.parallel_proto, type_name)
-            if issubclass(type_obj, enum.Enum):
+        for type_obj in cls.proto_type_iter():
+            # type_obj = getattr(cls.parallel_proto, type_name)
+            if cls.is_enum_type(type_obj):
                 enum_types[type_obj] = {
-                    e.value:e.name
-                    for e in type_obj
+                    ev:en
+                    for en,ev in cls.enum_vals_iter(type_obj)
                 }
-            if type_obj is cls.parallel_proto.ReactionRoleType: # very special cased
+            if type_obj is cls.reaction_role_type: # very special cased
                 identifier_types[type_obj] = [
-                    e.value for e in type_obj
+                    ev for en,ev in cls.enum_vals_iter(type_obj)
                 ]
-            elif dataclasses.is_dataclass(type_obj):
-                for field in dataclasses.fields(type_obj):
+            elif cls.is_message_type(type_obj):
+                for field in cls.field_iter(type_obj):
                     field_type = cls.resolve_typestr(field.type)
                     if field.name == "units":
-                        for e in cls.resolve_typestr(field.type):
-                            if e.value != "unspecified":
-                                units_types[e.value] = type_obj
-                    elif field_type is not None and issubclass(field_type, cls.parallel_proto.OneOfType):
+                        for en,ev in cls.enum_vals_iter(cls.resolve_typestr(field.type)):
+                            if ev != "unspecified":
+                                units_types[ev] = type_obj
+                    elif cls.is_oneof_type(field_type):
                         kinds_types[type_obj] = {
                             cls.resolve_typestr(subfield.type):subfield.name
-                            for subfield in dataclasses.fields(field_type)
+                            for subfield in cls.field_iter(field_type)
                         }
                     elif field.name == "type":
                         identifier_types[type_obj] = [
-                            e.value for e in cls.resolve_typestr(field.type)
+                            evalue for ename,evalue in cls.enum_vals_iter(cls.resolve_typestr(field.type))
                         ]
+
+                for oneof in cls.oneof_iter(type_obj):
+                    if not oneof.__name__.startswith("_"):
+                        kinds_types[type_obj] = {
+                            cls.resolve_typestr(subfield.type).value_type: subfield.name
+                            for subfield in cls.field_iter(oneof)
+                        }
         return identifier_types, units_types, kinds_types, enum_types
+    _protobuf_message_types = None
+    @classmethod
+    def _get_protobuf_maps(cls):
+        if cls._protobuf_message_types is None:
+            cls._protobuf_message_types = {
+                'types_by_name':cls.parallel_proto.DESCRIPTOR.message_types_by_name,
+                'enums_by_name':cls.parallel_proto.DESCRIPTOR.enum_types_by_name
+            }
+    @classmethod
+    def _descend_gproto(cls, gproto_type, cache):
+        if gproto_type not in cache:
+            cache.add(gproto_type)
+            yield gproto_type
+            for field in gproto_type.fields:
+                if field.type == 11:
+                    for subfield in cls._descend_gproto(field.message_type, cache):
+                        yield subfield
+                elif field.type == 14:
+                    field = field.enum_type
+                    cache.add(field)
+                    yield field
+            for field in gproto_type.enum_types_by_name.values():
+                cache.add(field)
+                yield field
+                # for subfield in cls._descend_gproto(field, cache):
+                #     yield subfield
+                # yield(field)
+
+    @classmethod
+    def proto_type_iter(cls):
+        if hasattr(cls.parallel_proto, '__all__'):
+            for typename in cls.parallel_proto.__all__:
+                yield getattr(cls.parallel_proto, typename)
+        else:
+            type_cache = set()
+            for base_type in cls.parallel_proto.DESCRIPTOR.message_types_by_name.values():
+                for message_type in cls._descend_gproto(base_type, type_cache):
+                    yield cls.GProtoDescriptorWrapper.lookup(message_type)
+    gprotobuf = None
+    @classmethod
+    def is_protobuf_obj(cls, obj):
+        return isinstance(obj, cls.GProtoDescriptorWrapper)
+    @classmethod
+    def is_enum_type(cls, field_type):
+        if isinstance(field_type, ProtoType):
+            field_type = field_type.value_type
+        if field_type in cls.atomic_types_map.values():
+            return False
+        if cls.is_protobuf_obj(field_type):
+            return field_type.is_enum_type()
+        else:
+            return issubclass(field_type, enum.Enum)
+    @classmethod
+    def enum_vals_iter(cls, obj_type):
+        if isinstance(obj_type, ProtoType):
+            obj_type = obj_type.value_type
+        if isinstance(obj_type, cls.GProtoDescriptorWrapper):
+            return [(name,name.lower()) for name,value in obj_type.desc.values_by_name.items()]
+        else:
+            return [(e.name,e.value) for e in obj_type]
+    @classmethod
+    def is_oneof_type(cls, field_type):
+        if isinstance(field_type, ProtoType):
+            field_type = field_type.value_type
+        if field_type in cls.atomic_types_map.values():
+            return False
+        if cls.is_protobuf_obj(field_type):
+            return field_type.is_oneof_type()
+        else:
+            return issubclass(field_type, cls.parallel_proto.OneOfType)
+    @classmethod
+    def is_message_type(cls, field_type):
+        if isinstance(field_type, ProtoType):
+            field_type = field_type.value_type
+        if field_type in cls.atomic_types_map.values():
+            return False
+        if cls.is_protobuf_obj(field_type):
+            return field_type.is_message_type()
+        else:
+            return dataclasses.is_dataclass(field_type)
     @classmethod
     def build_maps(cls):
         if (
@@ -687,8 +817,8 @@ class ProtoHandler:
     @classmethod
     def get_nounit_value_type_map(cls):
         return {
-            "percentage":cls.parallel_proto.Percentage,
-            "unitless":cls.parallel_proto.FloatValue
+            "percentage":cls.get_base_type("Percentage"),
+            "unitless":cls.get_base_type("FloatValue")
         }
     @classmethod
     def get_unique_keys(cls, root_type, bad_names=None):
@@ -710,7 +840,7 @@ class ProtoHandler:
     def get_reaction_conditions_map(cls):
         return {
             f.name:getattr(cls.parallel_proto, f.type)
-            for f in dataclasses.fields(cls.parallel_proto.ReactionConditions)
+            for f in cls.field_iter(cls.parallel_proto.ReactionConditions)
             if f.type not in cls.atomic_types_map
         }
     @classmethod
@@ -737,16 +867,20 @@ class ProtoHandler:
             raise KeyError("can't determine where {} fits into the reaction schema".format(key))
 
     @classmethod
-    def resolve_typestr(cls, typestr):
-        if typestr in cls.atomic_types_map:
+    def resolve_typestr(cls, typestr:'str|ProtoType'):
+        if isinstance(typestr, ProtoType):
+            return typestr
+        elif typestr in cls.atomic_types_map:
             return cls.atomic_types_map[typestr]
         elif typestr.startswith("dict[") or typestr.startswith("list["):
             return None
         else:
             return getattr(cls.parallel_proto, typestr)
     @classmethod
-    def resolve_type(cls, type_name:str):
-        if type_name in cls.atomic_types_map:
+    def resolve_type(cls, type_name:'str|ProtoType'):
+        if isinstance(type_name, ProtoType):
+            return type_name
+        elif type_name in cls.atomic_types_map:
             key_type = None
             value_type = cls.atomic_types_map[type_name]
             container_type = None
@@ -770,21 +904,95 @@ class ProtoHandler:
             field_name, root_type
         ))
 
+    MessageField = collections.namedtuple("MessageField", ["name", "type"])
+    @classmethod
+    def gproto_field_type(cls, field):
+        key_type = value_type = container_type = None
+        container_typechar = field.label
+        if container_typechar == 3:
+            container_type = list
+        else:
+            container_type = None
+
+        typechar = field.type
+        if typechar in {3, 4, 5, 6, 7, 13, 15, 16, 17, 18}:
+            value_type = int
+        elif typechar in {1, 2}:
+            value_type = float
+        elif typechar == 8:
+            value_type = bool
+        elif typechar == 9:
+            value_type = str
+        elif typechar == 12:
+            value_type = bytes
+        elif typechar == 11:
+            message_type = field.message_type
+            if container_type is list and message_type.name.endswith("Entry"):
+                field_dict = message_type.fields_by_name
+                if len(set(field_dict.keys()) - {'key', 'value'}) == 0:
+                    container_type = dict
+                    key_type = cls.gproto_field_type(field_dict['key'])
+                    if key_type.container_type is None:
+                        key_type = key_type.value_type
+                    value_type = cls.gproto_field_type(field_dict['value'])
+                    if value_type.container_type is None:
+                        value_type = value_type.value_type
+            if value_type is None:
+                value_type = cls.GProtoDescriptorWrapper.lookup(field.message_type)
+        elif typechar == 14:
+            value_type = cls.GProtoDescriptorWrapper.lookup(field.enum_type)
+        else:
+            raise ValueError(f"no conversion for proto typechar {typechar}")
+        return ProtoType(key_type, value_type, container_type)
+
+    class OneofUnionType:
+        def __init__(self, desc):
+            self.desc = desc
+
+    @classmethod
+    def oneof_iter(cls, type_obj):
+        if isinstance(type_obj, ProtoType):
+            type_obj = type_obj.value_type
+        if hasattr(type_obj, 'DESCRIPTOR'):
+            type_obj = cls.GProtoDescriptorWrapper.lookup(type_obj.DESCRIPTOR)
+        if cls.is_protobuf_obj(type_obj):
+            if cls.is_message_type(type_obj):
+                return [
+                    cls.GProtoDescriptorWrapper.lookup(oneof)
+                    for oneof in type_obj.desc.oneofs
+                    ]
+            else:
+                return []
+        else:
+            return []
     @classmethod
     def field_iter(cls, type_obj):
-        try:
-            fields = dataclasses.fields(type_obj)
-        except (TypeError, AttributeError):
-            fields = []
-        return fields
+        if isinstance(type_obj, ProtoType):
+            type_obj = type_obj.value_type
+        if hasattr(type_obj, 'DESCRIPTOR'):
+            type_obj = cls.GProtoDescriptorWrapper.lookup(type_obj.DESCRIPTOR)
+        if cls.is_protobuf_obj(type_obj):
+            if not cls.is_enum_type(type_obj):
+                return [
+                    cls.MessageField(field.name, cls.gproto_field_type(field))
+                    for field in type_obj.desc.fields
+                ]
+            else:
+                return []
+        else:
+            try:
+                fields = dataclasses.fields(type_obj)
+            except (TypeError, AttributeError):
+                fields = []
+            return fields
 
     @classmethod
     def is_value_type(cls, type):
         return (
             type in cls.atomic_types_map.values()
             or (
-                not issubclass(type, cls.parallel_proto.OneOfType)
-                and issubclass(type, enum.Enum)
+                not cls.is_oneof_type(type)
+                and cls.is_enum_type(type)
             )
         )
     @classmethod
@@ -812,7 +1020,7 @@ class ProtoHandler:
     default_paths = {}
     @classmethod
     def get_default_paths(cls):
-        role_map = cls.get_enum_values_map()[cls.parallel_proto.ReactionRoleType]
+        role_map = cls.get_enum_values_map()[cls.reaction_role_type]
         return {
             cls.parallel_proto.Reaction: dict(
                 {
@@ -829,7 +1037,7 @@ class ProtoHandler:
         }
     @classmethod
     def resolve_identifier_fields(cls, key_path, field_type, field_name, key_name):
-        if issubclass(field_type.value_type, enum.Enum):
+        if cls.is_enum_type(field_type.value_type):
             value_name = cls.get_enum_values_map()[field_type.value_type][key_name]
             msg = {field_name:value_name}
             key_path = key_path[:-1]
@@ -893,7 +1101,7 @@ class ProtoHandler:
     def get_reaction_fields(cls):
         return {
             f.name:cls.resolve_type(f.type)
-            for f in dataclasses.fields(cls.parallel_proto.Reaction)
+            for f in cls.field_iter(cls.parallel_proto.Reaction)
         }
 
     @classmethod
@@ -1120,7 +1328,7 @@ class DatasetConstructor:
     def sort_reaction_keys(cls, template):
         new = {}
         reaction_fields = [
-            f.name for f in dataclasses.fields(ProtoHandler.parallel_proto.Reaction)
+            f.name for f in ProtoHandler.field_iter(ProtoHandler.parallel_proto.Reaction)
         ]
         for k in sorted(template.keys(), key=lambda rk:reaction_fields.index(rk)):
             new[k] = template[k]

@@ -17,7 +17,7 @@ import collections
 import dataclasses
 from typing import Union
 
-from . import type_info as ord_schema
+from . import type_info as cmccdb_schema
 
 _MESSAGE_TYPES = (
     collections.abc.MutableMapping,  # Proto map.

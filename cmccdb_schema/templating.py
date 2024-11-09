@@ -27,7 +27,7 @@ from typing import BinaryIO, Optional, Union
 import pandas as pd
 from google.protobuf import text_format  # pytype: disable=import-error
 
-from . import type_info as ord_schema
+from . import type_info as cmccdb_schema
 from . import validations
 from .proto import dataset_pb2, reaction_pb2
 

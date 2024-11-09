@@ -32,7 +32,7 @@ from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 from werkzeug import security
 
-from . import type_info as ord_schema
+from . import type_info as cmccdb_schema
 from . import units
 from .proto import dataset_pb2, reaction_pb2
 
@@ -863,7 +863,7 @@ def create_message(message_name: str) -> cmccdb_schema.Message:
         raise ValueError(f"Cannot resolve message name {message_name}") from error
 
 
-def messages_to_dataframe(messages: Iterable[ord_schema.Message], drop_constant_columns: bool = False) -> pd.DataFrame:
+def messages_to_dataframe(messages: Iterable[cmccdb_schema.Message], drop_constant_columns: bool = False) -> pd.DataFrame:
     """Converts a list of protos to a pandas DataFrame.
 
     Args:
@@ -942,7 +942,7 @@ def safe_update(target: dict, update: Mapping) -> None:
 
 def _message_to_row(
     field: cmccdb_schema.FieldDescriptor,
-    value: Union[ord_schema.Message, cmccdb_schema.ScalarType],
+    value: Union[cmccdb_schema.Message, cmccdb_schema.ScalarType],
     trace: tuple[str],
 ) -> dict[str, cmccdb_schema.ScalarType]:
     """Recursively creates a dict for a single value.
