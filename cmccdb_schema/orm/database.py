@@ -64,7 +64,7 @@ def prepare_database(engine: Engine) -> bool:
             logger.warning("RDKit PostgreSQL cartridge is not installed; structure search will be disabled")
             connection.execute(text("CREATE EXTENSION IF NOT EXISTS btree_gist"))
         rdkit_cartridge = False
-    with patch.dict(os.environ, {"ORD_POSTGRES_RDKIT": "1" if rdkit_cartridge else "0"}):
+    with patch.dict(os.environ, {"CMCCDB_POSTGRES_RDKIT": "1" if rdkit_cartridge else "0"}):
         Base.metadata.create_all(engine)
     return rdkit_cartridge
 
@@ -206,8 +206,8 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
         .where(Mappers.Dataset.dataset_id == dataset_id)
     )
     updates = []
-    for ord_id, rdkit_id in query.fetchall():
-        updates.append({"id": ord_id, "rdkit_reaction_id": rdkit_id})
+    for cmccdb_id, rdkit_id in query.fetchall():
+        updates.append({"id": cmccdb_id, "rdkit_reaction_id": rdkit_id})
     session.execute(update(Mappers.Reaction), updates)
     # Update Compound.
     query = session.execute(
@@ -219,8 +219,8 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
         .where(Mappers.Dataset.dataset_id == dataset_id)
     )
     updates = []
-    for ord_id, rdkit_id in query.fetchall():
-        updates.append({"id": ord_id, "rdkit_mol_id": rdkit_id})
+    for cmccdb_id, rdkit_id in query.fetchall():
+        updates.append({"id": cmccdb_id, "rdkit_mol_id": rdkit_id})
     session.execute(update(Mappers.Compound), updates)
     # Update ProductCompound.
     query = session.execute(
@@ -232,7 +232,7 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
         .where(Mappers.Dataset.dataset_id == dataset_id)
     )
     updates = []
-    for ord_id, rdkit_id in query.fetchall():
-        updates.append({"id": ord_id, "rdkit_mol_id": rdkit_id})
+    for cmccdb_id, rdkit_id in query.fetchall():
+        updates.append({"id": cmccdb_id, "rdkit_mol_id": rdkit_id})
     session.execute(update(Mappers.ProductCompound), updates)
     logger.info(f"Updating RDKit IDs took {time.time() - start:g}s")

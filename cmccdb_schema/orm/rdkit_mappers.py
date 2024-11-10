@@ -36,7 +36,7 @@ from cmccdb_schema.orm import Base
 
 def rdkit_cartridge() -> bool:
     """Returns whether to use RDKit PostgreSQL cartridge functionality."""
-    return bool(strtobool(os.environ.get("ORD_POSTGRES_RDKIT", "1")))
+    return bool(strtobool(os.environ.get("CMCCDB_POSTGRES_RDKIT", "1")))
 
 
 class _RDKitMol(UserDefinedType):

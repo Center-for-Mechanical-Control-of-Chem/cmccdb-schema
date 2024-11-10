@@ -1,0 +1,28 @@
+{
+  "name": "cmccdb-schema",
+  "version": "0.3.80",
+  "description": "Schema for the CMCC Reaction Database",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Center-for-Mechanical-Control-of-Chem/cmccdb-schema.git"
+  },
+  "author": "Center for the Mechanical Control of Chemistry",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Center-for-Mechanical-Control-of-Chem/cmccdb-schema"
+  },
+  "homepage": "https://www.chem.tamu.edu/cmcc/",
+  "dependencies": {
+    "google-protobuf": "<3.20"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  }
+}

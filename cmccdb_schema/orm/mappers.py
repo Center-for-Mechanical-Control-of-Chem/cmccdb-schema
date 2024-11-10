@@ -47,12 +47,12 @@ from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 
 logger = get_logger(__name__)
 
-
+DATATYPE_PREFIX = "cmccdb."
 def get_message_type(full_name: str) -> Any:
     """Fetches the class for a protocol buffer message type."""
-    if not full_name.startswith("ord."):
+    if not full_name.startswith(DATATYPE_PREFIX):
         raise ValueError(f"Unexpected message type: {full_name}")
-    operator = attrgetter(full_name[4:])
+    operator = attrgetter(full_name[len(DATATYPE_PREFIX):])
     try:
         return operator(reaction_pb2)
     except AttributeError:
@@ -134,11 +134,11 @@ def build_mapper(  # pylint: disable=too-many-branches
     attrs = {
         "__tablename__": underscore(message_type.DESCRIPTOR.name),
         "id": Column(Integer, primary_key=True),
-        "ord_schema_context": Column(Text, nullable=False),
-        "__table_args__": ({"schema": "ord"},),
+        "cmccdb_schema_context": Column(Text, nullable=False),
+        "__table_args__": ({"schema": "cmccdb"},),
     }
     attrs["__mapper_args__"] = {
-        "polymorphic_on": attrs["ord_schema_context"],
+        "polymorphic_on": attrs["cmccdb_schema_context"],
         "polymorphic_identity": message_type.DESCRIPTOR.name,
         "with_polymorphic": "*",
     }
@@ -188,13 +188,13 @@ def build_mapper(  # pylint: disable=too-many-branches
         kwargs = {}
         if message_type == reaction_pb2.CrudeComponent:
             kwargs["nullable"] = False
-        attrs["reaction_id"] = Column(Text, ForeignKey("ord.reaction.reaction_id", ondelete="CASCADE"), **kwargs)
+        attrs["reaction_id"] = Column(Text, ForeignKey("cmccdb.reaction.reaction_id", ondelete="CASCADE"), **kwargs)
     logger.debug(f"Creating mapper {message_type.DESCRIPTOR.name}: {attrs}")
     mapper_class = type(message_type.DESCRIPTOR.name, (Base,), attrs)
     # Create polymorphic child classes.
     for parent_type, field_name, _ in parents[message_type]:
         foreign_table_name = underscore(parent_type.DESCRIPTOR.name)
-        foreign_key = f"ord.{foreign_table_name}.id"
+        foreign_key = f"cmccdb.{foreign_table_name}.id"
         child_attrs = {
             "__mapper_args__": {"polymorphic_identity": f"{parent_type.DESCRIPTOR.name}.{field_name}"},
             # Use get() to avoid column conflicts; see
