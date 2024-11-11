@@ -440,8 +440,9 @@ class ProtoTemplater:
         return valid, value
     def apply(self, values):
         if len(values) != len(self.template_paths):
-            raise ValueError("expected {} values got {}".format(
-                len(self.template_paths), len(values)
+            print(self.template_paths)
+            raise ValueError("expected {} values got {} ({})".format(
+                len(self.template_paths), len(values), values,
             ))
         copy_tree = self.spec.copy() # shallow copy
         if self.validator is not None:
@@ -855,10 +856,17 @@ class ProtoHandler:
             "unitless":cls.get_base_type("FloatValue")
         }
     @classmethod
-    def get_unique_keys(cls, root_type, bad_names=None):
+    def get_unique_keys(cls, root_type, exclude_top_level=True, bad_names=None):
         names = set()
+        top_names = set()
         if bad_names is None:
+            # print("="*20, root_type, "="*20)
             bad_names = set()
+            if exclude_top_level:
+                top_names = {
+                    field.name
+                    for field in cls.field_iter(root_type)
+                }
         for field in cls.field_iter(root_type):
             k = field.name
             subnames, _ = cls.get_unique_keys(cls.get_field_type(root_type, k).value_type, bad_names)
@@ -868,6 +876,8 @@ class ProtoHandler:
                subnames.add(k)
             bad_names.update(names & subnames)
             names.update(subnames - bad_names)
+        names = names | top_names
+        bad_names = bad_names - top_names
         return names, bad_names
 
     @classmethod
@@ -1107,7 +1117,9 @@ class ProtoHandler:
 
         unames, bad_names = cls.get_unique_keys(root_type.value_type)
         if key_name in bad_names:
-            raise ValueError(f"can't find unique insertion spot for {key_name}")
+            raise ValueError(
+                f"can't find unique insertion spot for {key_name} into {root_type.value_type}"
+            )
 
         id_map = cls.get_identifier_type_map()
         def test(field_name, field_type, full_path, key_path):
@@ -1263,7 +1275,7 @@ class DatasetConstructor:
     def _parse_csv_rows(cls, csv_rows):
         key_row, child_rows = csv_rows[0], csv_rows[1:]
         if len(child_rows) == 0:
-            return cls.strip_empties([key_row])
+            return cls.prep_parse_tree([key_row])
 
         keys = []
         splits = []
@@ -1300,7 +1312,10 @@ class DatasetConstructor:
             []
         )
 
-        return cls.strip_empties(flat_tree)
+        return cls.prep_parse_tree(flat_tree)
+    @classmethod
+    def prep_parse_tree(cls, tree_list):
+        return cls.split_specifier_fields(cls.strip_empties(tree_list))
     @classmethod
     def strip_empties(cls, tree_list):
         return [
@@ -1309,6 +1324,20 @@ class DatasetConstructor:
             cls.strip_empties(s)
             for s in tree_list
             if (isinstance(s, str) and len(s) > 0 or len(cls.strip_empties(s)) > 0)
+        ]
+
+    specifier_char = ":"
+    @classmethod
+    def split_specifier_fields(cls, tree_list):
+        return [
+            (
+                [s.strip() for s in subtree.split(cls.specifier_char)]
+                    if ":" in subtree else
+                subtree
+            )
+                if isinstance(subtree, str) else
+            cls.split_specifier_fields(subtree)
+            for subtree in tree_list
         ]
 
     comment_char = "#!"
