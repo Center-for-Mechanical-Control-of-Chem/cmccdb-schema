@@ -525,7 +525,8 @@ class ProtoTemplater:
         for p,subtree in mod_tree.items():
             if subtree is True: continue
             if cls.check_prunable_subtree(subtree, pruning_cache):
-                del copy_tree[p]
+                copy_tree[p] = Placeholders.InvalidParameterPlaceholder
+                # del copy_tree[p]
             else:
                 cls.coprune_trees(copy_tree[p], subtree, pruning_cache=pruning_cache)
         return copy_tree
@@ -1253,9 +1254,9 @@ class DatasetConstructor:
         if suffix is None:
             _, suffix = os.path.splitext(file_name_or_buffer)
         if suffix in [".xls", ".xlsx"]:
-            data = pd.read_excel(file_name_or_buffer, dtype=str, keep_default_na=False)
+            data = pd.read_excel(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
         else:
-            data = pd.read_csv(file_name_or_buffer, dtype=str, keep_default_na=False)
+            data = pd.read_csv(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
         return cls.from_iter(data.values, extra_fields=extra_fields)
 
     @classmethod

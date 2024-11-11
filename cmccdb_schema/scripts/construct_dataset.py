@@ -49,14 +49,14 @@ def main(kwargs):
     if not os.path.isfile(filename):
         raise IOError("spreadsheet file {} doesn't exist".format(filename))
     data_name = kwargs.get('--dataset-name', "")
-    if len(data_name) == 0:
+    if data_name is not None and len(data_name) == 0:
         data_name = None
 
     output = kwargs.get('--output')
     if output is None:
         base_name, _ = os.path.splitext(filename)
         output = base_name + ".pbtxt"
-        overwrite_ok = kwargs.get('overwrite-ok')
+        overwrite_ok = kwargs.get('--overwrite-ok')
         if not overwrite_ok and os.path.isfile(output):
             raise IOError("can't clobber old file {} without --overwrite-ok".format(output))
 
