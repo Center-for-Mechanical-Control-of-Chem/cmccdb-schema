@@ -52,7 +52,7 @@ def prepare_database(engine: Engine) -> bool:
         except OperationalError:
             logger.warning("tsm_system_rows cartridge is not installed; random sampling will be disabled")
     with engine.begin() as connection:
-        connection.execute(text("CREATE SCHEMA IF NOT EXISTS ord"))
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS cmccdb"))
         connection.execute(text("CREATE SCHEMA IF NOT EXISTS rdkit"))
     try:
         with engine.begin() as connection:

@@ -14,10 +14,11 @@
 """Creates a Dataset by enumerating a template with a spreadsheet.
 
 Usage:
-    construct_dataset.py --data=<str> --name=<str> --email=<str> [--output=<str> --no-validate --overwrite-ok]
+    construct_dataset.py --data=<str> --name=<str> --email=<str> [--dataset-name=<str> --output=<str> --no-validate --overwrite-ok]
 
 Options:
     --data=<str>            Path to a spreadsheet file with an appropriate template spec
+    --dataset-name=<str>    Name of the Dataset
     --output=<str>          Filename for output Dataset
     --name=<str>            The user creating the Dataset
     --email=<str>           The email of the person creating the Dataset
@@ -39,20 +40,24 @@ def main(kwargs):
 
     logger = get_logger(__name__)
 
-    if len(kwargs["--name"]) == 0:
+    if len(kwargs.get("--name", "")) == 0:
         raise ValueError("contributor name is required")
-    if len(kwargs["--email"]) == 0:
+    if len(kwargs.get("--email", "")) == 0:
         raise ValueError("contributor email is required")
 
     filename = kwargs["--data"]
     if not os.path.isfile(filename):
         raise IOError("spreadsheet file {} doesn't exist".format(filename))
+    data_name = kwargs.get('--dataset-name', "")
+    if len(data_name) == 0:
+        data_name = None
 
-    output = kwargs['--output']
+    output = kwargs.get('--output')
     if output is None:
         base_name, _ = os.path.splitext(filename)
         output = base_name + ".pbtxt"
-        if not kwargs['--overwrite-ok'] and os.path.isfile(output):
+        overwrite_ok = kwargs.get('overwrite-ok')
+        if not overwrite_ok and os.path.isfile(output):
             raise IOError("can't clobber old file {} without --overwrite-ok".format(output))
 
     logger.info(
@@ -64,6 +69,7 @@ def main(kwargs):
 
     dataset = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         filename,
+        name=data_name,
         extra_fields={
             'record_created': {
                 "time": {"value": str(datetime.datetime.now())},
@@ -72,7 +78,7 @@ def main(kwargs):
             }
         }
     )
-    if not kwargs["--no-validate"]:
+    if not kwargs.get("--no-validate"):
         validations.validate_datasets({filename: dataset})
 
     logger.info("writing new Dataset to %s", output)
