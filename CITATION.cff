@@ -13,8 +13,8 @@ authors:
 - family-names: "Williams"
   given-names: "Daniel"
   orcid: "https://orcid.org/0009-0000-6788-7599"
-title: "Center for Control of Mechanochemistry Database Schema"
+title: "Center for the Mechanical Control of Chemistry Database: Schema"
 version: 0.0.1
-doi: 10.5281/zenodo.14826995
+doi: 10.5281/zenodo.14826989
 date-released: 2025-02-06
 url: "https://github.com/Center-for-Mechanical-Control-of-Chem/cmccdb-schema"
