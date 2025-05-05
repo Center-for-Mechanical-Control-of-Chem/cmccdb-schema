@@ -542,10 +542,10 @@ message ReactionConditions {
   StirringConditions stirring = 3;
   IlluminationConditions illumination = 4;
   ElectrochemistryConditions electrochemistry = 5;
-  MechanochemistryConditions mechanochemistry = 6;
-  FlowConditions flow = 7;
-  optional bool reflux = 8;
-  optional float ph = 9;
+  FlowConditions flow = 6;
+  optional bool reflux = 7;
+  optional float ph = 8;
+  MechanochemistryConditions mechanochemistry = 9;
   // Boolean to describe whether the conditions cannot be
   // represented by the static, single-step schema.
   optional bool conditions_are_dynamic = 10;
@@ -737,6 +737,7 @@ message MechanochemistryConditions {
     HAND_GRIND = 4;
     TWIN_SCREW = 5;
     ANVIL_CELL = 6;
+    RESONANT_ACOUSTIC_MIXING = 7;
   }
   MechanochemistryType type = 1;
   string details = 2;
@@ -746,6 +747,9 @@ message MechanochemistryConditions {
   optional string ball_material = 6;
   optional bool liquid_assisted = 7;
   optional string cell_material = 8;
+  optional int32 number_of_balls = 9;
+  optional float vessel_size = 10;
+  optional string cap_material = 11;
 }
 
 message FlowConditions {
