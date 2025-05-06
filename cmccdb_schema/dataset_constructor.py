@@ -109,14 +109,14 @@ class ProtoMessage:
         if field_name not in self.fields:
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
-    def insert_field(self, field_name, data=None):
+    def insert_field(self, field_name, data=None, optional=False):
         field_name, units = normalize_key(field_name)
         key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
         if data is not None:
             key_path, final_key = key_path[:-1], key_path[-1]
             if fields is None:
                 fields = {}
-            fields.update({final_key:data})
+            ProtoMessage.update_field_dict(fields, {final_key:data}, optional=optional)
 
         if field_name == "time":
             raise ValueError(key_path)
@@ -128,30 +128,30 @@ class ProtoMessage:
         if fields is not None:
             if units is not None:
                 unit_field = ProtoHandler.resolve_unit_message(fields, units)
-                fields.update(unit_field)
-            msg.update(fields)
+                ProtoMessage.update_field_dict(fields, unit_field, optional=optional)
+            msg.update(fields, optional=optional)
         elif units is not None:
             unit_field = ProtoHandler.resolve_unit_message(msg, units)
-            msg.add_message(unit_field)
+            msg.add_message(unit_field, allow_updates=True, optional=optional)
         return msg
-    def insert_tree(self, subtree):
+    def insert_tree(self, subtree, optional=False):
         msg = self
         for header in subtree:
             if isinstance(header, str):
-                msg = self.insert_field(header)
+                msg = self.insert_field(header, optional=optional)
             else:
                 msg.insert_tree(header) # subtree
-    def insert_dict(self, subtree):
+    def insert_dict(self, subtree, optional=False):
         for header,subtree in subtree.items():
             if isinstance(subtree, dict):
-                msg = self.insert_field(header)
-                msg.insert_dict(subtree)
+                msg = self.insert_field(header, optional=optional)
+                msg.insert_dict(subtree, optional=optional)
             elif isinstance(subtree, list):
-                msg = self.insert_field(header)
+                msg = self.insert_field(header, optional=optional)
                 for submsg in subtree:
-                    msg.add_message(submsg)
+                    msg.add_message(submsg, allow_updates=True, optional=optional)
             else:
-                msg = self.insert_field(header, data=subtree)
+                msg = self.insert_field(header, data=subtree, optional=optional)
 
     def has_path(self, key_path):
         if len(key_path) == 0:
@@ -172,15 +172,31 @@ class ProtoMessage:
         return self.get_field(item)
     def __setitem__(self, key, value):
         self.fields[key] = value
-    def update(self, proto:'ProtoMessage'):
+
+    @classmethod
+    def update_field_dict(cls, core_dict, field_iter, optional=False):
+        if optional:
+            for f,v in field_iter.items():
+                if f not in core_dict:
+                    core_dict[f] = v
+        else:
+            core_dict.update(field_iter)
+    def update_fields(self, field_iter, optional=False):
+        self.update_field_dict(
+            self.fields,
+            field_iter,
+            optional=optional
+        )
+
+    def update(self, proto:'ProtoMessage', optional=False):
         if isinstance(proto, dict):
-            self.fields.update(proto)
+            self.update_fields(proto, optional=optional)
         else:
             if proto.type is not self.type:
                 raise ValueError("can't merge protos of different types {} and {}".format(
                     self.type, proto.type
                 ))
-            self.fields.update(proto.fields)
+            self.update_fields(proto.fields, optional=optional)
     def to_template(self, key_name=None):
         return {
             k: v.to_template(key_name=k) if isinstance(v, (ProtoMessage, ProtoContainer)) else v
@@ -222,7 +238,8 @@ class ProtoContainer:
             msg = ProtoMessage(self.type.value_type)
             self.add_message(Placeholders.TemplateParameter, msg)
 
-    def add_message(self, data_or_key:'ProtoMessage|str', data:ProtoMessage=None, key_name=None):
+    def add_message(self, data_or_key:'ProtoMessage|str', data:ProtoMessage=None, key_name=None,
+                    allow_updates=False, optional=False):
         if data is None:
             key = None
             data = data_or_key
@@ -246,7 +263,10 @@ class ProtoContainer:
             if self.type.container_type is not None or len(self.values) == 0:
                 self.values.append(data)
             else:
-                raise ValueError("message already added for data of type {}".format(self.type))
+                if allow_updates:
+                    self.get_default_message().update(data, optional=optional)
+                else:
+                    raise ValueError("message already added for data of type {}".format(self.type))
 
     def get_default_message(self):
         if len(self.values) == 0:
@@ -266,7 +286,7 @@ class ProtoContainer:
     def __getitem__(self, item):
         return self.get_field(item)
 
-    def insert_field(self, field_name, data=None):
+    def insert_field(self, field_name, data=None, optional=False):
         field_name, units = normalize_key(field_name)
         if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
             self.add_key(field_name)
@@ -281,7 +301,7 @@ class ProtoContainer:
             msg = self.get_default_message()
             if msg.has_path(key_path) and self.type.container_type is not None:
                 msg = ProtoMessage(self.type.value_type)
-                self.add_message(msg)
+                self.add_message(msg, allow_updates=True, optional=optional)
             if len(key_path) > 0:
                 msg = msg[key_path[0]]
                 for m in key_path[1:]:
@@ -289,40 +309,44 @@ class ProtoContainer:
             if fields is not None:
                 if units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(fields, units)
-                    fields.update(unit_field)
-                msg.update(fields)
+                    ProtoMessage.update_field_dict(
+                        fields,
+                        unit_field,
+                        optional=optional
+                    )
+                msg.update(fields, optional=optional)
             elif units is not None:
                 unit_field = ProtoHandler.resolve_unit_message(msg, units)
-                msg.add_message(unit_field)
+                msg.add_message(unit_field, allow_updates=True, optional=optional)
             return msg
-    def insert_tree(self, subtree):
+    def insert_tree(self, subtree, optional=False):
         msg = self
         for header in subtree:
             if isinstance(header, str):
-                msg = self.insert_field(header)
+                msg = self.insert_field(header, optional=optional)
             else:
-                msg.insert_tree(header) # subtree
-    def insert_dict(self, subtree):
+                msg.insert_tree(header, optional=optional) # subtree
+    def insert_dict(self, subtree, optional=False):
         for header,subtree in subtree.items():
             if isinstance(subtree, dict):
-                msg = self.insert_field(header)
-                msg.insert_dict(subtree)
+                msg = self.insert_field(header, optional=optional)
+                msg.insert_dict(subtree, optional=optional)
             elif isinstance(subtree, list):
-                msg = self.insert_field(header)
+                msg = self.insert_field(header, optional=optional)
                 for submsg in subtree:
-                    msg.add_message(submsg)
+                    msg.add_message(submsg, allow_updates=True, optional=optional)
             else:
-                msg = self.insert_field(header, data=subtree)
+                msg = self.insert_field(header, data=subtree, optional=optional)
     def __setitem__(self, key, value):
         self.get_default_message().__setitem__(key, value)
-    def update(self, proto:'ProtoContainer|ProtoMessage|dict'):
+    def update(self, proto:'ProtoContainer|ProtoMessage|dict', optional=False):
         if isinstance(proto, (ProtoMessage,dict)):
             msg = self.get_default_message()
             fields = proto.fields if isinstance(proto, ProtoMessage) else proto
             if any(msg.has_path([f]) for f in fields.keys()):
                 msg = ProtoMessage(self.type.value_type)
-                self.add_message(msg)
-            self.get_default_message().update(proto)
+                self.add_message(msg, allow_updates=True, optional=optional)
+            self.get_default_message().update(proto, optional=optional)
         else:
             if proto.type != self.type:
                 raise ValueError("can't merge protos of different types {} and {}".format(
@@ -375,7 +399,6 @@ class ProtoTemplater:
         return self._paths
     @classmethod
     def get_template_paths(cls, template):
-
         if isinstance(template, dict):
             return [
                 p
@@ -440,7 +463,6 @@ class ProtoTemplater:
         return valid, value
     def apply(self, values):
         if len(values) != len(self.template_paths):
-            print(self.template_paths)
             raise ValueError("expected {} values got {} ({})".format(
                 len(self.template_paths), len(values), values,
             ))
@@ -1195,14 +1217,15 @@ class DatasetConstructor:
     An alternate CSV input wrapper
     """
 
-    def __init__(self, common_block, variant_structure, extra_fields=None):
+    def __init__(self, common_block, variant_structure, extra_fields=None, optional_fields=None):
         self.common = common_block
         self.variant = variant_structure
         self.extra_fields = extra_fields
+        self.optional_fields = optional_fields
         self._template = None
 
     @classmethod
-    def from_iter(cls, iterable, extra_fields=None):
+    def from_iter(cls, iterable, extra_fields=None, optional_fields=None):
         blocks = []
         common = []
         variants = []
@@ -1256,12 +1279,12 @@ class DatasetConstructor:
                 data = []
 
         return [
-            (cls(com, var, extra_fields=extra_fields), dat)
+            (cls(com, var, extra_fields=extra_fields, optional_fields=optional_fields), dat)
             for com,var,dat in blocks
         ]
 
     @classmethod
-    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None):
+    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None, optional_fields=None):
         # adapted from templating.py
         if suffix is None:
             _, suffix = os.path.splitext(file_name_or_buffer)
@@ -1269,7 +1292,7 @@ class DatasetConstructor:
             data = pd.read_excel(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
         else:
             data = pd.read_csv(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
-        return cls.from_iter(data.values, extra_fields=extra_fields)
+        return cls.from_iter(data.values, extra_fields=extra_fields, optional_fields=optional_fields)
 
     @classmethod
     def _parse_csv_rows(cls, csv_rows):
@@ -1397,20 +1420,21 @@ class DatasetConstructor:
             new[k] = template[k]
         return new
     @classmethod
-    def setup_template(cls, common, variant, extra_fields=None):
+    def setup_template(cls, common, variant, extra_fields=None, optional_fields=None):
 
         rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
         nt_tree = cls.parse_csv_rows(common[:-1])
         rxn.insert_tree(nt_tree)
         if extra_fields is not None:
             rxn.insert_dict(extra_fields)
+        if optional_fields is not None:
+            rxn.insert_dict(optional_fields, optional=True)
         templater = ProtoTemplater.from_proto(rxn)
-        base_template = templater.apply(
-            cls.sanitize_csv_data(
-                [s for s in common[-1] if len(s) > 0],
-                len(templater.template_paths)
-            )
+        csv_data = cls.sanitize_csv_data(
+            [s for s in common[-1] if len(s) > 0],
+            len(templater.template_paths)
         )
+        base_template = templater.apply(csv_data)
 
         rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
         var_tree = cls.parse_csv_rows(variant)
@@ -1428,14 +1452,17 @@ class DatasetConstructor:
     @property
     def template(self):
         if self._template is None:
-            self._template = self.setup_template(self.common, self.variant, extra_fields=self.extra_fields)
+            self._template = self.setup_template(self.common, self.variant,
+                                                 extra_fields=self.extra_fields,
+                                                 optional_fields=self.optional_fields)
         return self._template
 
     @classmethod
     def enumerate_spreadsheet(cls, file,
                               name=None,
                               id=None,
-                              extra_fields=None
+                              extra_fields=None,
+                              optional_fields=None
                               ):
         from google.protobuf.json_format import ParseDict
         from .proto import dataset_pb2
@@ -1445,7 +1472,7 @@ class DatasetConstructor:
         if id is None:
             id = str(uuid.uuid4()).replace("-", "")[:32]
 
-        parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields)
+        parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields, optional_fields=optional_fields)
         protos = []
         total_rxns = len([r for _,d in parser_data for r in d])
         ndig = max([4, len(str(total_rxns))])

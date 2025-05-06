@@ -70,7 +70,7 @@ def main(kwargs):
     dataset = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         filename,
         name=data_name,
-        extra_fields={
+        optional_fields={
             'record_created': {
                 "time": {"value": str(datetime.datetime.now())},
                 "name": kwargs["--name"],
