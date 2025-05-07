@@ -102,6 +102,9 @@ class ReactionInput(_message.Message):
             ADDITION_FUNNEL: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
             PIPETTE: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
             POSITIVE_DISPLACEMENT_PIPETTE: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            PISTON_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            SYRINGE_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            PERISTALTIC_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
         UNSPECIFIED: ReactionInput.AdditionDevice.AdditionDeviceType
         CUSTOM: ReactionInput.AdditionDevice.AdditionDeviceType
         NONE: ReactionInput.AdditionDevice.AdditionDeviceType
@@ -110,6 +113,9 @@ class ReactionInput(_message.Message):
         ADDITION_FUNNEL: ReactionInput.AdditionDevice.AdditionDeviceType
         PIPETTE: ReactionInput.AdditionDevice.AdditionDeviceType
         POSITIVE_DISPLACEMENT_PIPETTE: ReactionInput.AdditionDevice.AdditionDeviceType
+        PISTON_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
+        SYRINGE_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
+        PERISTALTIC_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
         TYPE_FIELD_NUMBER: _ClassVar[int]
         DETAILS_FIELD_NUMBER: _ClassVar[int]
         type: ReactionInput.AdditionDevice.AdditionDeviceType
@@ -383,7 +389,6 @@ class Vessel(_message.Message):
         PRESSURE_FLASK: _ClassVar[Vessel.VesselType]
         PRESSURE_REACTOR: _ClassVar[Vessel.VesselType]
         ELECTROCHEMICAL_CELL: _ClassVar[Vessel.VesselType]
-        BALL: _ClassVar[Vessel.VesselType]
     UNSPECIFIED: Vessel.VesselType
     CUSTOM: Vessel.VesselType
     ROUND_BOTTOM_FLASK: Vessel.VesselType
@@ -397,7 +402,6 @@ class Vessel(_message.Message):
     PRESSURE_FLASK: Vessel.VesselType
     PRESSURE_REACTOR: Vessel.VesselType
     ELECTROCHEMICAL_CELL: Vessel.VesselType
-    BALL: Vessel.VesselType
     TYPE_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
     MATERIAL_FIELD_NUMBER: _ClassVar[int]
@@ -557,7 +561,7 @@ class ReactionSetup(_message.Message):
     def __init__(self, vessel: _Optional[_Union[Vessel, _Mapping]] = ..., is_automated: bool = ..., automation_platform: _Optional[str] = ..., automation_code: _Optional[_Mapping[str, Data]] = ..., environment: _Optional[_Union[ReactionSetup.ReactionEnvironment, _Mapping]] = ...) -> None: ...
 
 class ReactionConditions(_message.Message):
-    __slots__ = ("temperature", "pressure", "stirring", "illumination", "electrochemistry", "flow", "reflux", "ph", "mechanochemistry", "conditions_are_dynamic", "details")
+    __slots__ = ("temperature", "pressure", "stirring", "illumination", "electrochemistry", "flow", "reflux", "ph", "conditions_are_dynamic", "details")
     TEMPERATURE_FIELD_NUMBER: _ClassVar[int]
     PRESSURE_FIELD_NUMBER: _ClassVar[int]
     STIRRING_FIELD_NUMBER: _ClassVar[int]
@@ -566,7 +570,6 @@ class ReactionConditions(_message.Message):
     FLOW_FIELD_NUMBER: _ClassVar[int]
     REFLUX_FIELD_NUMBER: _ClassVar[int]
     PH_FIELD_NUMBER: _ClassVar[int]
-    MECHANOCHEMISTRY_FIELD_NUMBER: _ClassVar[int]
     CONDITIONS_ARE_DYNAMIC_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
     temperature: TemperatureConditions
@@ -577,10 +580,9 @@ class ReactionConditions(_message.Message):
     flow: FlowConditions
     reflux: bool
     ph: float
-    mechanochemistry: MechanochemistryConditions
     conditions_are_dynamic: bool
     details: str
-    def __init__(self, temperature: _Optional[_Union[TemperatureConditions, _Mapping]] = ..., pressure: _Optional[_Union[PressureConditions, _Mapping]] = ..., stirring: _Optional[_Union[StirringConditions, _Mapping]] = ..., illumination: _Optional[_Union[IlluminationConditions, _Mapping]] = ..., electrochemistry: _Optional[_Union[ElectrochemistryConditions, _Mapping]] = ..., flow: _Optional[_Union[FlowConditions, _Mapping]] = ..., reflux: bool = ..., ph: _Optional[float] = ..., mechanochemistry: _Optional[_Union[MechanochemistryConditions, _Mapping]] = ..., conditions_are_dynamic: bool = ..., details: _Optional[str] = ...) -> None: ...
+    def __init__(self, temperature: _Optional[_Union[TemperatureConditions, _Mapping]] = ..., pressure: _Optional[_Union[PressureConditions, _Mapping]] = ..., stirring: _Optional[_Union[StirringConditions, _Mapping]] = ..., illumination: _Optional[_Union[IlluminationConditions, _Mapping]] = ..., electrochemistry: _Optional[_Union[ElectrochemistryConditions, _Mapping]] = ..., flow: _Optional[_Union[FlowConditions, _Mapping]] = ..., reflux: bool = ..., ph: _Optional[float] = ..., conditions_are_dynamic: bool = ..., details: _Optional[str] = ...) -> None: ...
 
 class TemperatureConditions(_message.Message):
     __slots__ = ("control", "setpoint", "measurements")
@@ -875,50 +877,6 @@ class ElectrochemistryConditions(_message.Message):
     measurements: _containers.RepeatedCompositeFieldContainer[ElectrochemistryConditions.ElectrochemistryMeasurement]
     cell: ElectrochemistryConditions.ElectrochemistryCell
     def __init__(self, type: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryType, str]] = ..., details: _Optional[str] = ..., current: _Optional[_Union[Current, _Mapping]] = ..., voltage: _Optional[_Union[Voltage, _Mapping]] = ..., anode_material: _Optional[str] = ..., cathode_material: _Optional[str] = ..., electrode_separation: _Optional[_Union[Length, _Mapping]] = ..., measurements: _Optional[_Iterable[_Union[ElectrochemistryConditions.ElectrochemistryMeasurement, _Mapping]]] = ..., cell: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryCell, _Mapping]] = ...) -> None: ...
-
-class MechanochemistryConditions(_message.Message):
-    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "liquid_assisted", "cell_material", "number_of_balls", "vessel_size", "cap_material")
-    class MechanochemistryType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = ()
-        UNSPECIFIED: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        CUSTOM: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        TIP_ARRAY: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        BALL_MILL: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        HAND_GRIND: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        TWIN_SCREW: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        ANVIL_CELL: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-        RESONANT_ACOUSTIC_MIXING: _ClassVar[MechanochemistryConditions.MechanochemistryType]
-    UNSPECIFIED: MechanochemistryConditions.MechanochemistryType
-    CUSTOM: MechanochemistryConditions.MechanochemistryType
-    TIP_ARRAY: MechanochemistryConditions.MechanochemistryType
-    BALL_MILL: MechanochemistryConditions.MechanochemistryType
-    HAND_GRIND: MechanochemistryConditions.MechanochemistryType
-    TWIN_SCREW: MechanochemistryConditions.MechanochemistryType
-    ANVIL_CELL: MechanochemistryConditions.MechanochemistryType
-    RESONANT_ACOUSTIC_MIXING: MechanochemistryConditions.MechanochemistryType
-    TYPE_FIELD_NUMBER: _ClassVar[int]
-    DETAILS_FIELD_NUMBER: _ClassVar[int]
-    FREQUENCY_FIELD_NUMBER: _ClassVar[int]
-    FORCE_FIELD_NUMBER: _ClassVar[int]
-    DURATION_FIELD_NUMBER: _ClassVar[int]
-    BALL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
-    LIQUID_ASSISTED_FIELD_NUMBER: _ClassVar[int]
-    CELL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
-    NUMBER_OF_BALLS_FIELD_NUMBER: _ClassVar[int]
-    VESSEL_SIZE_FIELD_NUMBER: _ClassVar[int]
-    CAP_MATERIAL_FIELD_NUMBER: _ClassVar[int]
-    type: MechanochemistryConditions.MechanochemistryType
-    details: str
-    frequency: Frequency
-    force: Force
-    duration: Time
-    ball_material: str
-    liquid_assisted: bool
-    cell_material: str
-    number_of_balls: int
-    vessel_size: float
-    cap_material: str
-    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., liquid_assisted: bool = ..., cell_material: _Optional[str] = ..., number_of_balls: _Optional[int] = ..., vessel_size: _Optional[float] = ..., cap_material: _Optional[str] = ...) -> None: ...
 
 class FlowConditions(_message.Message):
     __slots__ = ("type", "details", "pump_type", "tubing")
@@ -1386,42 +1344,6 @@ class Time(_message.Message):
     precision: float
     units: Time.TimeUnit
     def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Time.TimeUnit, str]] = ...) -> None: ...
-
-class Force(_message.Message):
-    __slots__ = ("value", "precision", "units")
-    class ForceUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = ()
-        UNSPECIFIED: _ClassVar[Force.ForceUnit]
-        NEWTON: _ClassVar[Force.ForceUnit]
-        MILLINEWTON: _ClassVar[Force.ForceUnit]
-    UNSPECIFIED: Force.ForceUnit
-    NEWTON: Force.ForceUnit
-    MILLINEWTON: Force.ForceUnit
-    VALUE_FIELD_NUMBER: _ClassVar[int]
-    PRECISION_FIELD_NUMBER: _ClassVar[int]
-    UNITS_FIELD_NUMBER: _ClassVar[int]
-    value: float
-    precision: float
-    units: Force.ForceUnit
-    def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Force.ForceUnit, str]] = ...) -> None: ...
-
-class Frequency(_message.Message):
-    __slots__ = ("value", "precision", "units")
-    class FrequencyUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-        __slots__ = ()
-        UNSPECIFIED: _ClassVar[Frequency.FrequencyUnit]
-        HERTZ: _ClassVar[Frequency.FrequencyUnit]
-        RPM: _ClassVar[Frequency.FrequencyUnit]
-    UNSPECIFIED: Frequency.FrequencyUnit
-    HERTZ: Frequency.FrequencyUnit
-    RPM: Frequency.FrequencyUnit
-    VALUE_FIELD_NUMBER: _ClassVar[int]
-    PRECISION_FIELD_NUMBER: _ClassVar[int]
-    UNITS_FIELD_NUMBER: _ClassVar[int]
-    value: float
-    precision: float
-    units: Frequency.FrequencyUnit
-    def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Frequency.FrequencyUnit, str]] = ...) -> None: ...
 
 class Mass(_message.Message):
     __slots__ = ("value", "precision", "units")

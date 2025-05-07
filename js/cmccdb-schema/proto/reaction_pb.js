@@ -7190,10 +7190,10 @@ proto.cmccdb.ReactionConditions.toObject = function(includeInstance, msg) {
     stirring: (f = msg.getStirring()) && proto.cmccdb.StirringConditions.toObject(includeInstance, f),
     illumination: (f = msg.getIllumination()) && proto.cmccdb.IlluminationConditions.toObject(includeInstance, f),
     electrochemistry: (f = msg.getElectrochemistry()) && proto.cmccdb.ElectrochemistryConditions.toObject(includeInstance, f),
-    mechanochemistry: (f = msg.getMechanochemistry()) && proto.cmccdb.MechanochemistryConditions.toObject(includeInstance, f),
     flow: (f = msg.getFlow()) && proto.cmccdb.FlowConditions.toObject(includeInstance, f),
-    reflux: jspb.Message.getBooleanFieldWithDefault(msg, 8, false),
-    ph: jspb.Message.getFloatingPointFieldWithDefault(msg, 9, 0.0),
+    reflux: jspb.Message.getBooleanFieldWithDefault(msg, 7, false),
+    ph: jspb.Message.getFloatingPointFieldWithDefault(msg, 8, 0.0),
+    mechanochemistry: (f = msg.getMechanochemistry()) && proto.cmccdb.MechanochemistryConditions.toObject(includeInstance, f),
     conditionsAreDynamic: jspb.Message.getBooleanFieldWithDefault(msg, 10, false),
     details: jspb.Message.getFieldWithDefault(msg, 11, "")
   };
@@ -7258,22 +7258,22 @@ proto.cmccdb.ReactionConditions.deserializeBinaryFromReader = function(msg, read
       msg.setElectrochemistry(value);
       break;
     case 6:
-      var value = new proto.cmccdb.MechanochemistryConditions;
-      reader.readMessage(value,proto.cmccdb.MechanochemistryConditions.deserializeBinaryFromReader);
-      msg.setMechanochemistry(value);
-      break;
-    case 7:
       var value = new proto.cmccdb.FlowConditions;
       reader.readMessage(value,proto.cmccdb.FlowConditions.deserializeBinaryFromReader);
       msg.setFlow(value);
       break;
-    case 8:
+    case 7:
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setReflux(value);
       break;
-    case 9:
+    case 8:
       var value = /** @type {number} */ (reader.readFloat());
       msg.setPh(value);
+      break;
+    case 9:
+      var value = new proto.cmccdb.MechanochemistryConditions;
+      reader.readMessage(value,proto.cmccdb.MechanochemistryConditions.deserializeBinaryFromReader);
+      msg.setMechanochemistry(value);
       break;
     case 10:
       var value = /** @type {boolean} */ (reader.readBool());
@@ -7352,34 +7352,34 @@ proto.cmccdb.ReactionConditions.serializeBinaryToWriter = function(message, writ
       proto.cmccdb.ElectrochemistryConditions.serializeBinaryToWriter
     );
   }
-  f = message.getMechanochemistry();
+  f = message.getFlow();
   if (f != null) {
     writer.writeMessage(
       6,
       f,
-      proto.cmccdb.MechanochemistryConditions.serializeBinaryToWriter
-    );
-  }
-  f = message.getFlow();
-  if (f != null) {
-    writer.writeMessage(
-      7,
-      f,
       proto.cmccdb.FlowConditions.serializeBinaryToWriter
     );
   }
-  f = /** @type {boolean} */ (jspb.Message.getField(message, 8));
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 7));
   if (f != null) {
     writer.writeBool(
+      7,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 8));
+  if (f != null) {
+    writer.writeFloat(
       8,
       f
     );
   }
-  f = /** @type {number} */ (jspb.Message.getField(message, 9));
+  f = message.getMechanochemistry();
   if (f != null) {
-    writer.writeFloat(
+    writer.writeMessage(
       9,
-      f
+      f,
+      proto.cmccdb.MechanochemistryConditions.serializeBinaryToWriter
     );
   }
   f = /** @type {boolean} */ (jspb.Message.getField(message, 10));
@@ -7585,49 +7585,12 @@ proto.cmccdb.ReactionConditions.prototype.hasElectrochemistry = function() {
 
 
 /**
- * optional MechanochemistryConditions mechanochemistry = 6;
- * @return {?proto.cmccdb.MechanochemistryConditions}
- */
-proto.cmccdb.ReactionConditions.prototype.getMechanochemistry = function() {
-  return /** @type{?proto.cmccdb.MechanochemistryConditions} */ (
-    jspb.Message.getWrapperField(this, proto.cmccdb.MechanochemistryConditions, 6));
-};
-
-
-/**
- * @param {?proto.cmccdb.MechanochemistryConditions|undefined} value
- * @return {!proto.cmccdb.ReactionConditions} returns this
-*/
-proto.cmccdb.ReactionConditions.prototype.setMechanochemistry = function(value) {
-  return jspb.Message.setWrapperField(this, 6, value);
-};
-
-
-/**
- * Clears the message field making it undefined.
- * @return {!proto.cmccdb.ReactionConditions} returns this
- */
-proto.cmccdb.ReactionConditions.prototype.clearMechanochemistry = function() {
-  return this.setMechanochemistry(undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {boolean}
- */
-proto.cmccdb.ReactionConditions.prototype.hasMechanochemistry = function() {
-  return jspb.Message.getField(this, 6) != null;
-};
-
-
-/**
- * optional FlowConditions flow = 7;
+ * optional FlowConditions flow = 6;
  * @return {?proto.cmccdb.FlowConditions}
  */
 proto.cmccdb.ReactionConditions.prototype.getFlow = function() {
   return /** @type{?proto.cmccdb.FlowConditions} */ (
-    jspb.Message.getWrapperField(this, proto.cmccdb.FlowConditions, 7));
+    jspb.Message.getWrapperField(this, proto.cmccdb.FlowConditions, 6));
 };
 
 
@@ -7636,7 +7599,7 @@ proto.cmccdb.ReactionConditions.prototype.getFlow = function() {
  * @return {!proto.cmccdb.ReactionConditions} returns this
 */
 proto.cmccdb.ReactionConditions.prototype.setFlow = function(value) {
-  return jspb.Message.setWrapperField(this, 7, value);
+  return jspb.Message.setWrapperField(this, 6, value);
 };
 
 
@@ -7654,16 +7617,16 @@ proto.cmccdb.ReactionConditions.prototype.clearFlow = function() {
  * @return {boolean}
  */
 proto.cmccdb.ReactionConditions.prototype.hasFlow = function() {
-  return jspb.Message.getField(this, 7) != null;
+  return jspb.Message.getField(this, 6) != null;
 };
 
 
 /**
- * optional bool reflux = 8;
+ * optional bool reflux = 7;
  * @return {boolean}
  */
 proto.cmccdb.ReactionConditions.prototype.getReflux = function() {
-  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 8, false));
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 7, false));
 };
 
 
@@ -7672,7 +7635,7 @@ proto.cmccdb.ReactionConditions.prototype.getReflux = function() {
  * @return {!proto.cmccdb.ReactionConditions} returns this
  */
 proto.cmccdb.ReactionConditions.prototype.setReflux = function(value) {
-  return jspb.Message.setField(this, 8, value);
+  return jspb.Message.setField(this, 7, value);
 };
 
 
@@ -7681,7 +7644,7 @@ proto.cmccdb.ReactionConditions.prototype.setReflux = function(value) {
  * @return {!proto.cmccdb.ReactionConditions} returns this
  */
 proto.cmccdb.ReactionConditions.prototype.clearReflux = function() {
-  return jspb.Message.setField(this, 8, undefined);
+  return jspb.Message.setField(this, 7, undefined);
 };
 
 
@@ -7690,16 +7653,16 @@ proto.cmccdb.ReactionConditions.prototype.clearReflux = function() {
  * @return {boolean}
  */
 proto.cmccdb.ReactionConditions.prototype.hasReflux = function() {
-  return jspb.Message.getField(this, 8) != null;
+  return jspb.Message.getField(this, 7) != null;
 };
 
 
 /**
- * optional float ph = 9;
+ * optional float ph = 8;
  * @return {number}
  */
 proto.cmccdb.ReactionConditions.prototype.getPh = function() {
-  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 9, 0.0));
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 8, 0.0));
 };
 
 
@@ -7708,7 +7671,7 @@ proto.cmccdb.ReactionConditions.prototype.getPh = function() {
  * @return {!proto.cmccdb.ReactionConditions} returns this
  */
 proto.cmccdb.ReactionConditions.prototype.setPh = function(value) {
-  return jspb.Message.setField(this, 9, value);
+  return jspb.Message.setField(this, 8, value);
 };
 
 
@@ -7717,7 +7680,7 @@ proto.cmccdb.ReactionConditions.prototype.setPh = function(value) {
  * @return {!proto.cmccdb.ReactionConditions} returns this
  */
 proto.cmccdb.ReactionConditions.prototype.clearPh = function() {
-  return jspb.Message.setField(this, 9, undefined);
+  return jspb.Message.setField(this, 8, undefined);
 };
 
 
@@ -7726,6 +7689,43 @@ proto.cmccdb.ReactionConditions.prototype.clearPh = function() {
  * @return {boolean}
  */
 proto.cmccdb.ReactionConditions.prototype.hasPh = function() {
+  return jspb.Message.getField(this, 8) != null;
+};
+
+
+/**
+ * optional MechanochemistryConditions mechanochemistry = 9;
+ * @return {?proto.cmccdb.MechanochemistryConditions}
+ */
+proto.cmccdb.ReactionConditions.prototype.getMechanochemistry = function() {
+  return /** @type{?proto.cmccdb.MechanochemistryConditions} */ (
+    jspb.Message.getWrapperField(this, proto.cmccdb.MechanochemistryConditions, 9));
+};
+
+
+/**
+ * @param {?proto.cmccdb.MechanochemistryConditions|undefined} value
+ * @return {!proto.cmccdb.ReactionConditions} returns this
+*/
+proto.cmccdb.ReactionConditions.prototype.setMechanochemistry = function(value) {
+  return jspb.Message.setWrapperField(this, 9, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.cmccdb.ReactionConditions} returns this
+ */
+proto.cmccdb.ReactionConditions.prototype.clearMechanochemistry = function() {
+  return this.setMechanochemistry(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.ReactionConditions.prototype.hasMechanochemistry = function() {
   return jspb.Message.getField(this, 9) != null;
 };
 
@@ -11121,7 +11121,10 @@ proto.cmccdb.MechanochemistryConditions.toObject = function(includeInstance, msg
     duration: (f = msg.getDuration()) && proto.cmccdb.Time.toObject(includeInstance, f),
     ballMaterial: jspb.Message.getFieldWithDefault(msg, 6, ""),
     liquidAssisted: jspb.Message.getBooleanFieldWithDefault(msg, 7, false),
-    cellMaterial: jspb.Message.getFieldWithDefault(msg, 8, "")
+    cellMaterial: jspb.Message.getFieldWithDefault(msg, 8, ""),
+    numberOfBalls: jspb.Message.getFieldWithDefault(msg, 9, 0),
+    vesselSize: jspb.Message.getFloatingPointFieldWithDefault(msg, 10, 0.0),
+    capMaterial: jspb.Message.getFieldWithDefault(msg, 11, "")
   };
 
   if (includeInstance) {
@@ -11192,6 +11195,18 @@ proto.cmccdb.MechanochemistryConditions.deserializeBinaryFromReader = function(m
     case 8:
       var value = /** @type {string} */ (reader.readString());
       msg.setCellMaterial(value);
+      break;
+    case 9:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setNumberOfBalls(value);
+      break;
+    case 10:
+      var value = /** @type {number} */ (reader.readFloat());
+      msg.setVesselSize(value);
+      break;
+    case 11:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setCapMaterial(value);
       break;
     default:
       reader.skipField();
@@ -11281,6 +11296,27 @@ proto.cmccdb.MechanochemistryConditions.serializeBinaryToWriter = function(messa
       f
     );
   }
+  f = /** @type {number} */ (jspb.Message.getField(message, 9));
+  if (f != null) {
+    writer.writeInt32(
+      9,
+      f
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 10));
+  if (f != null) {
+    writer.writeFloat(
+      10,
+      f
+    );
+  }
+  f = /** @type {string} */ (jspb.Message.getField(message, 11));
+  if (f != null) {
+    writer.writeString(
+      11,
+      f
+    );
+  }
 };
 
 
@@ -11294,7 +11330,8 @@ proto.cmccdb.MechanochemistryConditions.MechanochemistryType = {
   BALL_MILL: 3,
   HAND_GRIND: 4,
   TWIN_SCREW: 5,
-  ANVIL_CELL: 6
+  ANVIL_CELL: 6,
+  RESONANT_ACOUSTIC_MIXING: 7
 };
 
 /**
@@ -11549,6 +11586,114 @@ proto.cmccdb.MechanochemistryConditions.prototype.clearCellMaterial = function()
  */
 proto.cmccdb.MechanochemistryConditions.prototype.hasCellMaterial = function() {
   return jspb.Message.getField(this, 8) != null;
+};
+
+
+/**
+ * optional int32 number_of_balls = 9;
+ * @return {number}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.getNumberOfBalls = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 9, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.setNumberOfBalls = function(value) {
+  return jspb.Message.setField(this, 9, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.clearNumberOfBalls = function() {
+  return jspb.Message.setField(this, 9, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.hasNumberOfBalls = function() {
+  return jspb.Message.getField(this, 9) != null;
+};
+
+
+/**
+ * optional float vessel_size = 10;
+ * @return {number}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.getVesselSize = function() {
+  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 10, 0.0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.setVesselSize = function(value) {
+  return jspb.Message.setField(this, 10, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.clearVesselSize = function() {
+  return jspb.Message.setField(this, 10, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.hasVesselSize = function() {
+  return jspb.Message.getField(this, 10) != null;
+};
+
+
+/**
+ * optional string cap_material = 11;
+ * @return {string}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.getCapMaterial = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 11, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.setCapMaterial = function(value) {
+  return jspb.Message.setField(this, 11, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.clearCapMaterial = function() {
+  return jspb.Message.setField(this, 11, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.hasCapMaterial = function() {
+  return jspb.Message.getField(this, 11) != null;
 };
 
 
