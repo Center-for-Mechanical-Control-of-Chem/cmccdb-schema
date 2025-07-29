@@ -12,20 +12,22 @@ class Placeholders(enum.Enum):
     OptionalParameterPlaceholder = "-optional-"
 
 unit_aliases = {
-    "%":"percentage",
-    "Hz":"hertz",
-    # "mol":"mole",
-    # "mmol":"millimole",
-    "s":"second",
-    "hr":"hour",
-    "N":"newton",
-    "mN":"millinewton",
-    "min":"minute",
-    "L":"liter",
-    "mL":"milliliter",
-    "nm":"nanometer",
-    "atm":"atmosphere"
+    "%":"percentage"
 }
+
+def update_aliases():
+    from . import units
+    for pb_type,aliases in units._UNIT_SYNONYMS.items():
+        for pb_type_int, alias_list in aliases.items():
+            pb_type_enum = next(iter(pb_type.DESCRIPTOR.enum_types_by_name.values()))
+            target_unit = pb_type_enum.values_by_number[pb_type_int].name.lower()
+            for alias_string in alias_list:
+                if alias_string in unit_aliases:
+                    raise ValueError(f"incompatible unit aliases, {alias_string} is {unit_aliases[alias_string]} and {target_unit}")
+                unit_aliases[alias_string] = target_unit
+update_aliases()
+
+
 def normalize_key(k):
     k_bits = k.split("(", 1)
     if len(k_bits) == 2:
@@ -110,30 +112,33 @@ class ProtoMessage:
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
     def insert_field(self, field_name, data=None, optional=False):
-        field_name, units = normalize_key(field_name)
-        key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
-        if data is not None:
-            key_path, final_key = key_path[:-1], key_path[-1]
-            if fields is None:
-                fields = {}
-            ProtoMessage.update_field_dict(fields, {final_key:data}, optional=optional)
+        try:
+            field_name, units = normalize_key(field_name)
+            key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
+            if data is not None:
+                key_path, final_key = key_path[:-1], key_path[-1]
+                if fields is None:
+                    fields = {}
+                ProtoMessage.update_field_dict(fields, {final_key:data}, optional=optional)
 
-        if field_name == "time":
-            raise ValueError(key_path)
-        msg = self
-        if len(key_path) > 0:
-            msg = msg[key_path[0]]
-            for m in key_path[1:]:
-                msg = msg[m]
-        if fields is not None:
-            if units is not None:
-                unit_field = ProtoHandler.resolve_unit_message(fields, units)
-                ProtoMessage.update_field_dict(fields, unit_field, optional=optional)
-            msg.update(fields, optional=optional)
-        elif units is not None:
-            unit_field = ProtoHandler.resolve_unit_message(msg, units)
-            msg.add_message(unit_field, allow_updates=True, optional=optional)
-        return msg
+            if field_name == "time":
+                raise ValueError(key_path)
+            msg = self
+            if len(key_path) > 0:
+                msg = msg[key_path[0]]
+                for m in key_path[1:]:
+                    msg = msg[m]
+            if fields is not None:
+                if units is not None:
+                    unit_field = ProtoHandler.resolve_unit_message(fields, units)
+                    ProtoMessage.update_field_dict(fields, unit_field, optional=optional)
+                msg.update(fields, optional=optional)
+            elif units is not None:
+                unit_field = ProtoHandler.resolve_unit_message(msg, units)
+                msg.add_message(unit_field, allow_updates=True, optional=optional)
+            return msg
+        except Exception as e:
+            raise ValueError(f"error in adding field {field_name}") from e
     def insert_tree(self, subtree, optional=False):
         msg = self
         for header in subtree:
@@ -287,38 +292,41 @@ class ProtoContainer:
         return self.get_field(item)
 
     def insert_field(self, field_name, data=None, optional=False):
-        field_name, units = normalize_key(field_name)
-        if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
-            self.add_key(field_name)
-            return self
-        else:
-            key_path, fields = ProtoHandler.resolve_insertion_spot(self.type, field_name)
-            if data is not None:
-                key_path, final_key = key_path[:-1], key_path[-1]
-                if fields is None:
-                    fields = {}
-                fields.update({final_key: data})
-            msg = self.get_default_message()
-            if msg.has_path(key_path) and self.type.container_type is not None:
-                msg = ProtoMessage(self.type.value_type)
-                self.add_message(msg, allow_updates=True, optional=optional)
-            if len(key_path) > 0:
-                msg = msg[key_path[0]]
-                for m in key_path[1:]:
-                    msg = msg[m]
-            if fields is not None:
-                if units is not None:
-                    unit_field = ProtoHandler.resolve_unit_message(fields, units)
-                    ProtoMessage.update_field_dict(
-                        fields,
-                        unit_field,
-                        optional=optional
-                    )
-                msg.update(fields, optional=optional)
-            elif units is not None:
-                unit_field = ProtoHandler.resolve_unit_message(msg, units)
-                msg.add_message(unit_field, allow_updates=True, optional=optional)
-            return msg
+        try:
+            field_name, units = normalize_key(field_name)
+            if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
+                self.add_key(field_name)
+                return self
+            else:
+                key_path, fields = ProtoHandler.resolve_insertion_spot(self.type, field_name)
+                if data is not None:
+                    key_path, final_key = key_path[:-1], key_path[-1]
+                    if fields is None:
+                        fields = {}
+                    fields.update({final_key: data})
+                msg = self.get_default_message()
+                if msg.has_path(key_path) and self.type.container_type is not None:
+                    msg = ProtoMessage(self.type.value_type)
+                    self.add_message(msg, allow_updates=True, optional=optional)
+                if len(key_path) > 0:
+                    msg = msg[key_path[0]]
+                    for m in key_path[1:]:
+                        msg = msg[m]
+                if fields is not None:
+                    if units is not None:
+                        unit_field = ProtoHandler.resolve_unit_message(fields, units)
+                        ProtoMessage.update_field_dict(
+                            fields,
+                            unit_field,
+                            optional=optional
+                        )
+                    msg.update(fields, optional=optional)
+                elif units is not None:
+                    unit_field = ProtoHandler.resolve_unit_message(msg, units)
+                    msg.add_message(unit_field, allow_updates=True, optional=optional)
+                return msg
+        except Exception as e:
+            raise ValueError(f"error in adding field {field_name}") from e
     def insert_tree(self, subtree, optional=False):
         msg = self
         for header in subtree:
@@ -878,6 +886,11 @@ class ProtoHandler:
             "unitless":cls.get_base_type("FloatValue")
         }
     @classmethod
+    def get_custom_unit_value_type_map(cls):
+        return {
+            "unmeasured": cls.get_base_type("UnmeasuredAmount")
+        }
+    @classmethod
     def get_unique_keys(cls, root_type, exclude_top_level=True, bad_names=None):
         names = set()
         top_names = set()
@@ -1176,16 +1189,27 @@ class ProtoHandler:
     def resolve_unit_message(cls, msg, units):
         unit_map = cls.get_units_type_map()
         nounit_map = cls.get_nounit_value_type_map()
+        custunit_map = cls.get_custom_unit_value_type_map()
         type = unit_map.get(units, None)
+        specifier = None
         if type is None:
             type = nounit_map.get(units, None)
             if type is not None: units = None
+        if type is None:
+            type = custunit_map.get(units, None)
+            if type is not None:  
+                units = None
+                specifier = type
+
         if type is None:
             raise ValueError("unknown unit specifier {}; known types are {}".format(
                 units, "\n".join(itertools.chain(unit_map.keys(), nounit_map.keys()))
             ))
         if units is None:
-            unit_msg = ProtoMessage(type, {"value":Placeholders.TemplateParameter})
+            if specifier is not None:
+                unit_msg = ProtoMessage(specifier, {"type":Placeholders.TemplateParameter})
+            else:
+                unit_msg = ProtoMessage(type, {"value":Placeholders.TemplateParameter})
         else:
             core_type = cls.get_field_type(type, "units").value_type
             value_name = cls.get_enum_values_map()[core_type][units]

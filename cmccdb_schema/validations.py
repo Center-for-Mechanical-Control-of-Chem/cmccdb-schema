@@ -1084,6 +1084,16 @@ def validate_force(message: reaction_pb2.Force):
     ensure_float_nonnegative(message, "value")
     ensure_float_nonnegative(message, "precision")
 
+def validate_grav_acc(message: reaction_pb2.GravitationalAcceleration):
+    check_value_and_units(message)
+    ensure_float_nonnegative(message, "value")
+    ensure_float_nonnegative(message, "precision")
+
+def validate_feeding_rate(message: reaction_pb2.FeedingRate):
+    check_value_and_units(message)
+    ensure_float_nonnegative(message, "value")
+    ensure_float_nonnegative(message, "precision")
+
 
 def validate_flow_rate(message: reaction_pb2.FlowRate):
     check_value_and_units(message)
@@ -1194,6 +1204,8 @@ _VALIDATOR_SWITCH = {
     reaction_pb2.Wavelength: validate_wavelength,
     reaction_pb2.Frequency: validate_frequency,
     reaction_pb2.Force: validate_force,
+    reaction_pb2.GravitationalAcceleration: validate_grav_acc,
+    reaction_pb2.FeedingRate: validate_feeding_rate,
     reaction_pb2.FlowRate: validate_flow_rate,
     reaction_pb2.Percentage: validate_percentage,
     reaction_pb2.FloatValue: validate_float_value,

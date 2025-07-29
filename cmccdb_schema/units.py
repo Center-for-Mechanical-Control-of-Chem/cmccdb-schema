@@ -132,6 +132,21 @@ _UNIT_SYNONYMS = {
         reaction_pb2.FlowRate.MILLILITER_PER_SECOND: ["mL/s"],
         reaction_pb2.FlowRate.MICROLITER_PER_HOUR: ["μL/h", "uL/h"],
     },
+    reaction_pb2.FeedingRate: {
+        reaction_pb2.FeedingRate.MILLIGRAMS_PER_SECOND: ["mg/s"],
+        reaction_pb2.FeedingRate.GRAMS_PER_MINUTE: ["g/min"],
+        reaction_pb2.FeedingRate.KILOGRAMS_PER_HOUR: ["kg/h"],
+    },
+    reaction_pb2.Frequency: {
+        reaction_pb2.Frequency.HERTZ: ["Hz", "hz"]
+    },
+    reaction_pb2.Force: {
+        reaction_pb2.Force.NEWTON: ["N"],
+        reaction_pb2.Force.MILLINEWTON: ["mN"]
+    },
+    reaction_pb2.GravitationalAcceleration: {
+        reaction_pb2.GravitationalAcceleration.STANDARD_GRAVITATIONAL_ACCELERATION: ["gE"]
+    },
 }
 
 _FORBIDDEN_UNITS = {

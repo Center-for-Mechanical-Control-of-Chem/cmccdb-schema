@@ -326,6 +326,9 @@ message ReactionRole {
     // - See https://doi.org/10.1021/op300317g for a discussion of these terms.
     BYPRODUCT = 9;
     SIDE_PRODUCT = 10;
+    // In mechanochemistry the role of components is not necessarily known
+    // and so it feels incorrect to call them solvents or reactants or catalysts
+    ADDITIVE = 11;
   }
 }
 
@@ -545,13 +548,14 @@ message ReactionConditions {
   FlowConditions flow = 6;
   optional bool reflux = 7;
   optional float ph = 8;
-  MechanochemistryConditions mechanochemistry = 9;
   // Boolean to describe whether the conditions cannot be
   // represented by the static, single-step schema.
   optional bool conditions_are_dynamic = 10;
   // A catch-all string field for providing more information about
   // the conditions (e.g., multiple stages)
   string details = 11;
+  // addition of mechanochemical conditions
+  MechanochemistryConditions mechanochemistry = 9;
 }
 
 message TemperatureConditions {
@@ -745,11 +749,13 @@ message MechanochemistryConditions {
   optional Force force = 4;
   optional Time duration = 5;
   optional string ball_material = 6;
-  optional bool liquid_assisted = 7;
-  optional string cell_material = 8;
-  optional int32 number_of_balls = 9;
-  optional float vessel_size = 10;
-  optional string cap_material = 11;
+  optional string cell_material = 7;
+  optional int32 number_of_balls = 8;
+  optional Length ball_radius = 9;
+  optional string cap_material = 10;
+  optional GravitationalAcceleration g_force = 11;
+  repeated Length dimension = 12;
+  repeated string geometry = 13; //  EXPERIMENTAL: to support twin screw segment geometries
 }
 
 message FlowConditions {
@@ -1215,6 +1221,16 @@ message Frequency {
   optional float precision = 2;
   FrequencyUnit units = 3;
 }
+message GravitationalAcceleration {
+ enum GravitationalAccelerationUnit {
+    UNSPECIFIED = 0;
+    STANDARD_GRAVITATIONAL_ACCELERATION = 1;
+  }
+  optional float value = 1;
+  // Precision of the measurement (with the same units as `value`).
+  optional float precision = 2;
+  GravitationalAccelerationUnit units = 3;
+}
 message Mass {
   enum MassUnit {
     UNSPECIFIED = 0;
@@ -1355,6 +1371,19 @@ message FlowRate {
   // Precision of the measurement (with the same units as `value`).
   optional float precision = 2;
   FlowRateUnit units = 3;
+}
+// It would probably be better to have a generic "ratio" unit but this is okay for now
+message FeedingRate {
+  enum FeedingRateUnit {
+    UNSPECIFIED = 0;
+    KILOGRAMS_PER_HOUR = 1;
+    GRAMS_PER_MINUTE = 2;
+    MILLIGRAMS_PER_SECOND = 3;
+  }
+  optional float value = 1;
+  // Precision of the measurement (with the same units as `value`).
+  optional float precision = 2;
+  FeedingRateUnit units = 3;
 }
 // Used for things like conversion and yield.
 message Percentage {

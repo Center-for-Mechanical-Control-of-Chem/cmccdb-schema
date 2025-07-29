@@ -279,6 +279,7 @@ class ReactionRole(_message.Message):
         PRODUCT: _ClassVar[ReactionRole.ReactionRoleType]
         BYPRODUCT: _ClassVar[ReactionRole.ReactionRoleType]
         SIDE_PRODUCT: _ClassVar[ReactionRole.ReactionRoleType]
+        ADDITIVE: _ClassVar[ReactionRole.ReactionRoleType]
     UNSPECIFIED: ReactionRole.ReactionRoleType
     REACTANT: ReactionRole.ReactionRoleType
     REAGENT: ReactionRole.ReactionRoleType
@@ -290,6 +291,7 @@ class ReactionRole(_message.Message):
     PRODUCT: ReactionRole.ReactionRoleType
     BYPRODUCT: ReactionRole.ReactionRoleType
     SIDE_PRODUCT: ReactionRole.ReactionRoleType
+    ADDITIVE: ReactionRole.ReactionRoleType
     def __init__(self) -> None: ...
 
 class CompoundPreparation(_message.Message):
@@ -877,7 +879,7 @@ class ElectrochemistryConditions(_message.Message):
     def __init__(self, type: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryType, str]] = ..., details: _Optional[str] = ..., current: _Optional[_Union[Current, _Mapping]] = ..., voltage: _Optional[_Union[Voltage, _Mapping]] = ..., anode_material: _Optional[str] = ..., cathode_material: _Optional[str] = ..., electrode_separation: _Optional[_Union[Length, _Mapping]] = ..., measurements: _Optional[_Iterable[_Union[ElectrochemistryConditions.ElectrochemistryMeasurement, _Mapping]]] = ..., cell: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryCell, _Mapping]] = ...) -> None: ...
 
 class MechanochemistryConditions(_message.Message):
-    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "liquid_assisted", "cell_material", "number_of_balls", "vessel_size", "cap_material")
+    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "cell_material", "number_of_balls", "ball_radius", "cap_material", "g_force", "dimension", "geometry")
     class MechanochemistryType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         UNSPECIFIED: _ClassVar[MechanochemistryConditions.MechanochemistryType]
@@ -902,23 +904,27 @@ class MechanochemistryConditions(_message.Message):
     FORCE_FIELD_NUMBER: _ClassVar[int]
     DURATION_FIELD_NUMBER: _ClassVar[int]
     BALL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
-    LIQUID_ASSISTED_FIELD_NUMBER: _ClassVar[int]
     CELL_MATERIAL_FIELD_NUMBER: _ClassVar[int]
     NUMBER_OF_BALLS_FIELD_NUMBER: _ClassVar[int]
-    VESSEL_SIZE_FIELD_NUMBER: _ClassVar[int]
+    BALL_RADIUS_FIELD_NUMBER: _ClassVar[int]
     CAP_MATERIAL_FIELD_NUMBER: _ClassVar[int]
+    G_FORCE_FIELD_NUMBER: _ClassVar[int]
+    DIMENSION_FIELD_NUMBER: _ClassVar[int]
+    GEOMETRY_FIELD_NUMBER: _ClassVar[int]
     type: MechanochemistryConditions.MechanochemistryType
     details: str
     frequency: Frequency
     force: Force
     duration: Time
     ball_material: str
-    liquid_assisted: bool
     cell_material: str
     number_of_balls: int
-    vessel_size: float
+    ball_radius: Length
     cap_material: str
-    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., liquid_assisted: bool = ..., cell_material: _Optional[str] = ..., number_of_balls: _Optional[int] = ..., vessel_size: _Optional[float] = ..., cap_material: _Optional[str] = ...) -> None: ...
+    g_force: GravitationalAcceleration
+    dimension: _containers.RepeatedCompositeFieldContainer[Length]
+    geometry: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., cell_material: _Optional[str] = ..., number_of_balls: _Optional[int] = ..., ball_radius: _Optional[_Union[Length, _Mapping]] = ..., cap_material: _Optional[str] = ..., g_force: _Optional[_Union[GravitationalAcceleration, _Mapping]] = ..., dimension: _Optional[_Iterable[_Union[Length, _Mapping]]] = ..., geometry: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class FlowConditions(_message.Message):
     __slots__ = ("type", "details", "pump_type", "tubing")
@@ -1423,6 +1429,22 @@ class Frequency(_message.Message):
     units: Frequency.FrequencyUnit
     def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Frequency.FrequencyUnit, str]] = ...) -> None: ...
 
+class GravitationalAcceleration(_message.Message):
+    __slots__ = ("value", "precision", "units")
+    class GravitationalAccelerationUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        UNSPECIFIED: _ClassVar[GravitationalAcceleration.GravitationalAccelerationUnit]
+        STANDARD_GRAVITATIONAL_ACCELERATION: _ClassVar[GravitationalAcceleration.GravitationalAccelerationUnit]
+    UNSPECIFIED: GravitationalAcceleration.GravitationalAccelerationUnit
+    STANDARD_GRAVITATIONAL_ACCELERATION: GravitationalAcceleration.GravitationalAccelerationUnit
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    PRECISION_FIELD_NUMBER: _ClassVar[int]
+    UNITS_FIELD_NUMBER: _ClassVar[int]
+    value: float
+    precision: float
+    units: GravitationalAcceleration.GravitationalAccelerationUnit
+    def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[GravitationalAcceleration.GravitationalAccelerationUnit, str]] = ...) -> None: ...
+
 class Mass(_message.Message):
     __slots__ = ("value", "precision", "units")
     class MassUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
@@ -1660,6 +1682,26 @@ class FlowRate(_message.Message):
     precision: float
     units: FlowRate.FlowRateUnit
     def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[FlowRate.FlowRateUnit, str]] = ...) -> None: ...
+
+class FeedingRate(_message.Message):
+    __slots__ = ("value", "precision", "units")
+    class FeedingRateUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        UNSPECIFIED: _ClassVar[FeedingRate.FeedingRateUnit]
+        KILOGRAMS_PER_HOUR: _ClassVar[FeedingRate.FeedingRateUnit]
+        GRAMS_PER_MINUTE: _ClassVar[FeedingRate.FeedingRateUnit]
+        MILLIGRAMS_PER_SECOND: _ClassVar[FeedingRate.FeedingRateUnit]
+    UNSPECIFIED: FeedingRate.FeedingRateUnit
+    KILOGRAMS_PER_HOUR: FeedingRate.FeedingRateUnit
+    GRAMS_PER_MINUTE: FeedingRate.FeedingRateUnit
+    MILLIGRAMS_PER_SECOND: FeedingRate.FeedingRateUnit
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    PRECISION_FIELD_NUMBER: _ClassVar[int]
+    UNITS_FIELD_NUMBER: _ClassVar[int]
+    value: float
+    precision: float
+    units: FeedingRate.FeedingRateUnit
+    def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[FeedingRate.FeedingRateUnit, str]] = ...) -> None: ...
 
 class Percentage(_message.Message):
     __slots__ = ("value", "precision")
