@@ -627,6 +627,16 @@ def validate_compound_identifier(message: reaction_pb2.CompoundIdentifier):
                     ValidationWarning,
                 )
 
+def validate_crystal_parameters(message: reaction_pb2.CrystalParameters):
+    check_type_and_details(message)
+
+def validate_crystal_structure_database_identifier(message: reaction_pb2.CrystalStructureDatabaseIdentifier):
+    check_type_and_details(message)
+    if not message.value:
+        warnings.warn("value must be set", ValidationError)
+    if message.type == message.CSD:
+        #TODO: support CSD identifier validation properly
+        ...
 
 def validate_vessel(message: reaction_pb2.Vessel):
     check_type_and_details(message)
@@ -1149,6 +1159,8 @@ _VALIDATOR_SWITCH = {
     reaction_pb2.CompoundPreparation: validate_compound_preparation,
     reaction_pb2.CompoundIdentifier: validate_compound_identifier,
     reaction_pb2.Compound.Source: validate_source,
+    reaction_pb2.CrystalParameters: validate_crystal_parameters,
+    reaction_pb2.CrystalStructureDatabaseIdentifier: validate_crystal_structure_database_identifier,
     # Setup
     reaction_pb2.Vessel: validate_vessel,
     reaction_pb2.VesselMaterial: validate_vessel_material,

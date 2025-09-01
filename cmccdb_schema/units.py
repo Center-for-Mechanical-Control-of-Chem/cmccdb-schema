@@ -82,6 +82,10 @@ _UNIT_SYNONYMS = {
         reaction_pb2.Length.INCH: ["in", "inch", "inches"],
         reaction_pb2.Length.FOOT: ["ft", "foot", "feet"],
     },
+    reaction_pb2.Angle: {
+        reaction_pb2.Angle.DEGREES: ["deg", "degree", "degrees"],
+        reaction_pb2.Angle.RADIANS: ["rad", "radian", "radians"]
+    },
     reaction_pb2.Pressure: {
         reaction_pb2.Pressure.BAR: ["bar", "barg", "bars"],
         reaction_pb2.Pressure.ATMOSPHERE: ["atm", "atmosphere", "atmospheres"],

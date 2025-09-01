@@ -1187,6 +1187,7 @@ class ProtoHandler:
 
     @classmethod
     def resolve_unit_message(cls, msg, units):
+        identifier_map = cls.get_identifier_type_map()
         unit_map = cls.get_units_type_map()
         nounit_map = cls.get_nounit_value_type_map()
         custunit_map = cls.get_custom_unit_value_type_map()

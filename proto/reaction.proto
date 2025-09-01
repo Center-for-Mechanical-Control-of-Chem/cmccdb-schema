@@ -154,6 +154,9 @@ message ReactionInput {
       ADDITION_FUNNEL = 5;
       PIPETTE = 6;
       POSITIVE_DISPLACEMENT_PIPETTE = 7;
+      PISTON_PUMP = 8;
+      SYRINGE_PUMP = 9;
+      PERISTALTIC_PUMP = 10;
     }
     AdditionDeviceType type = 1;
     // Specify, e.g., "gas-tight" for SYRINGE or cannula material.
@@ -296,7 +299,45 @@ message Compound {
   // defined in the analyses map.
   map<string, Analysis> analyses = 8;
   Texture texture = 9;
+
+  optional CrystalParameters crystal_parameters = 100;
 }
+
+message CrystalParameters {
+  enum CrystalStructureType {
+       UNSPECIFIED = 0;
+       CUSTOM = 1;
+       // different cell types
+       CUBIC = 2;
+       TETRAGONAL = 3;
+       ORTHROMBIC = 4;
+       HEXAGONAL = 5;
+       RHOMBOHEDRAL = 6;
+       MONOCLINIC = 7;
+       TRICLINIC = 8;
+  }
+  CrystalStructureType type = 1;
+  optional CrystalStructureDatabaseIdentifier database_identifier = 2;
+  optional Length a = 3;
+  optional Length b = 4;
+  optional Length c = 5;
+  optional Angle alpha = 6;
+  optional Angle beta = 7;
+  optional Angle gamma = 8;
+  optional string details = 9;
+}
+
+message CrystalStructureDatabaseIdentifier {
+  enum CrystalStructureDatabaseType {
+       UNSPECIFIED = 0;
+       CUSTOM = 1;
+       CSD = 2;
+       //TODO: add any other database identifiers if they exist
+  }
+  CrystalStructureDatabaseType type = 1;
+  string value = 2;
+  optional string details = 3;
+ }
 
 message ReactionRole {
   enum ReactionRoleType {
@@ -555,7 +596,7 @@ message ReactionConditions {
   // the conditions (e.g., multiple stages)
   string details = 11;
   // addition of mechanochemical conditions
-  MechanochemistryConditions mechanochemistry = 9;
+  MechanochemistryConditions mechanochemistry = 100;
 }
 
 message TemperatureConditions {
@@ -1346,6 +1387,17 @@ message Length {
   // Precision of the measurement (with the same units as `value`).
   optional float precision = 2;
   LengthUnit units = 3;
+}
+message Angle {
+  enum AngleUnit {
+    UNSPECIFIED = 0;
+    DEGREES = 1;
+    RADIANS = 2;
+  }
+  optional float value = 1;
+  // Precision of the measurement (with the same units as `value`).
+  optional float precision = 2;
+  AngleUnit units = 3;
 }
 message Wavelength {
   enum WavelengthUnit {

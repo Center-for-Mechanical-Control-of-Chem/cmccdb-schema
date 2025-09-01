@@ -102,6 +102,9 @@ class ReactionInput(_message.Message):
             ADDITION_FUNNEL: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
             PIPETTE: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
             POSITIVE_DISPLACEMENT_PIPETTE: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            PISTON_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            SYRINGE_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
+            PERISTALTIC_PUMP: _ClassVar[ReactionInput.AdditionDevice.AdditionDeviceType]
         UNSPECIFIED: ReactionInput.AdditionDevice.AdditionDeviceType
         CUSTOM: ReactionInput.AdditionDevice.AdditionDeviceType
         NONE: ReactionInput.AdditionDevice.AdditionDeviceType
@@ -110,6 +113,9 @@ class ReactionInput(_message.Message):
         ADDITION_FUNNEL: ReactionInput.AdditionDevice.AdditionDeviceType
         PIPETTE: ReactionInput.AdditionDevice.AdditionDeviceType
         POSITIVE_DISPLACEMENT_PIPETTE: ReactionInput.AdditionDevice.AdditionDeviceType
+        PISTON_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
+        SYRINGE_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
+        PERISTALTIC_PUMP: ReactionInput.AdditionDevice.AdditionDeviceType
         TYPE_FIELD_NUMBER: _ClassVar[int]
         DETAILS_FIELD_NUMBER: _ClassVar[int]
         type: ReactionInput.AdditionDevice.AdditionDeviceType
@@ -220,7 +226,7 @@ class CrudeComponent(_message.Message):
     def __init__(self, reaction_id: _Optional[str] = ..., includes_workup: bool = ..., has_derived_amount: bool = ..., amount: _Optional[_Union[Amount, _Mapping]] = ..., texture: _Optional[_Union[Texture, _Mapping]] = ...) -> None: ...
 
 class Compound(_message.Message):
-    __slots__ = ("identifiers", "amount", "reaction_role", "is_limiting", "preparations", "source", "features", "analyses", "texture")
+    __slots__ = ("identifiers", "amount", "reaction_role", "is_limiting", "preparations", "source", "features", "analyses", "texture", "crystal_parameters")
     class Source(_message.Message):
         __slots__ = ("vendor", "catalog_id", "lot")
         VENDOR_FIELD_NUMBER: _ClassVar[int]
@@ -253,6 +259,7 @@ class Compound(_message.Message):
     FEATURES_FIELD_NUMBER: _ClassVar[int]
     ANALYSES_FIELD_NUMBER: _ClassVar[int]
     TEXTURE_FIELD_NUMBER: _ClassVar[int]
+    CRYSTAL_PARAMETERS_FIELD_NUMBER: _ClassVar[int]
     identifiers: _containers.RepeatedCompositeFieldContainer[CompoundIdentifier]
     amount: Amount
     reaction_role: ReactionRole.ReactionRoleType
@@ -262,7 +269,68 @@ class Compound(_message.Message):
     features: _containers.MessageMap[str, Data]
     analyses: _containers.MessageMap[str, Analysis]
     texture: Texture
-    def __init__(self, identifiers: _Optional[_Iterable[_Union[CompoundIdentifier, _Mapping]]] = ..., amount: _Optional[_Union[Amount, _Mapping]] = ..., reaction_role: _Optional[_Union[ReactionRole.ReactionRoleType, str]] = ..., is_limiting: bool = ..., preparations: _Optional[_Iterable[_Union[CompoundPreparation, _Mapping]]] = ..., source: _Optional[_Union[Compound.Source, _Mapping]] = ..., features: _Optional[_Mapping[str, Data]] = ..., analyses: _Optional[_Mapping[str, Analysis]] = ..., texture: _Optional[_Union[Texture, _Mapping]] = ...) -> None: ...
+    crystal_parameters: CrystalParameters
+    def __init__(self, identifiers: _Optional[_Iterable[_Union[CompoundIdentifier, _Mapping]]] = ..., amount: _Optional[_Union[Amount, _Mapping]] = ..., reaction_role: _Optional[_Union[ReactionRole.ReactionRoleType, str]] = ..., is_limiting: bool = ..., preparations: _Optional[_Iterable[_Union[CompoundPreparation, _Mapping]]] = ..., source: _Optional[_Union[Compound.Source, _Mapping]] = ..., features: _Optional[_Mapping[str, Data]] = ..., analyses: _Optional[_Mapping[str, Analysis]] = ..., texture: _Optional[_Union[Texture, _Mapping]] = ..., crystal_parameters: _Optional[_Union[CrystalParameters, _Mapping]] = ...) -> None: ...
+
+class CrystalParameters(_message.Message):
+    __slots__ = ("type", "database_identifier", "a", "b", "c", "alpha", "beta", "gamma", "details")
+    class CrystalStructureType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        UNSPECIFIED: _ClassVar[CrystalParameters.CrystalStructureType]
+        CUSTOM: _ClassVar[CrystalParameters.CrystalStructureType]
+        CUBIC: _ClassVar[CrystalParameters.CrystalStructureType]
+        TETRAGONAL: _ClassVar[CrystalParameters.CrystalStructureType]
+        ORTHROMBIC: _ClassVar[CrystalParameters.CrystalStructureType]
+        HEXAGONAL: _ClassVar[CrystalParameters.CrystalStructureType]
+        RHOMBOHEDRAL: _ClassVar[CrystalParameters.CrystalStructureType]
+        MONOCLINIC: _ClassVar[CrystalParameters.CrystalStructureType]
+        TRICLINIC: _ClassVar[CrystalParameters.CrystalStructureType]
+    UNSPECIFIED: CrystalParameters.CrystalStructureType
+    CUSTOM: CrystalParameters.CrystalStructureType
+    CUBIC: CrystalParameters.CrystalStructureType
+    TETRAGONAL: CrystalParameters.CrystalStructureType
+    ORTHROMBIC: CrystalParameters.CrystalStructureType
+    HEXAGONAL: CrystalParameters.CrystalStructureType
+    RHOMBOHEDRAL: CrystalParameters.CrystalStructureType
+    MONOCLINIC: CrystalParameters.CrystalStructureType
+    TRICLINIC: CrystalParameters.CrystalStructureType
+    TYPE_FIELD_NUMBER: _ClassVar[int]
+    DATABASE_IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
+    A_FIELD_NUMBER: _ClassVar[int]
+    B_FIELD_NUMBER: _ClassVar[int]
+    C_FIELD_NUMBER: _ClassVar[int]
+    ALPHA_FIELD_NUMBER: _ClassVar[int]
+    BETA_FIELD_NUMBER: _ClassVar[int]
+    GAMMA_FIELD_NUMBER: _ClassVar[int]
+    DETAILS_FIELD_NUMBER: _ClassVar[int]
+    type: CrystalParameters.CrystalStructureType
+    database_identifier: CrystalStructureDatabaseIdentifier
+    a: Length
+    b: Length
+    c: Length
+    alpha: Angle
+    beta: Angle
+    gamma: Angle
+    details: str
+    def __init__(self, type: _Optional[_Union[CrystalParameters.CrystalStructureType, str]] = ..., database_identifier: _Optional[_Union[CrystalStructureDatabaseIdentifier, _Mapping]] = ..., a: _Optional[_Union[Length, _Mapping]] = ..., b: _Optional[_Union[Length, _Mapping]] = ..., c: _Optional[_Union[Length, _Mapping]] = ..., alpha: _Optional[_Union[Angle, _Mapping]] = ..., beta: _Optional[_Union[Angle, _Mapping]] = ..., gamma: _Optional[_Union[Angle, _Mapping]] = ..., details: _Optional[str] = ...) -> None: ...
+
+class CrystalStructureDatabaseIdentifier(_message.Message):
+    __slots__ = ("type", "value", "details")
+    class CrystalStructureDatabaseType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        UNSPECIFIED: _ClassVar[CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType]
+        CUSTOM: _ClassVar[CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType]
+        CSD: _ClassVar[CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType]
+    UNSPECIFIED: CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType
+    CUSTOM: CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType
+    CSD: CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType
+    TYPE_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    DETAILS_FIELD_NUMBER: _ClassVar[int]
+    type: CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType
+    value: str
+    details: str
+    def __init__(self, type: _Optional[_Union[CrystalStructureDatabaseIdentifier.CrystalStructureDatabaseType, str]] = ..., value: _Optional[str] = ..., details: _Optional[str] = ...) -> None: ...
 
 class ReactionRole(_message.Message):
     __slots__ = ()
@@ -559,7 +627,7 @@ class ReactionSetup(_message.Message):
     def __init__(self, vessel: _Optional[_Union[Vessel, _Mapping]] = ..., is_automated: bool = ..., automation_platform: _Optional[str] = ..., automation_code: _Optional[_Mapping[str, Data]] = ..., environment: _Optional[_Union[ReactionSetup.ReactionEnvironment, _Mapping]] = ...) -> None: ...
 
 class ReactionConditions(_message.Message):
-    __slots__ = ("temperature", "pressure", "stirring", "illumination", "electrochemistry", "flow", "reflux", "ph", "mechanochemistry", "conditions_are_dynamic", "details")
+    __slots__ = ("temperature", "pressure", "stirring", "illumination", "electrochemistry", "flow", "reflux", "ph", "conditions_are_dynamic", "details", "mechanochemistry")
     TEMPERATURE_FIELD_NUMBER: _ClassVar[int]
     PRESSURE_FIELD_NUMBER: _ClassVar[int]
     STIRRING_FIELD_NUMBER: _ClassVar[int]
@@ -568,9 +636,9 @@ class ReactionConditions(_message.Message):
     FLOW_FIELD_NUMBER: _ClassVar[int]
     REFLUX_FIELD_NUMBER: _ClassVar[int]
     PH_FIELD_NUMBER: _ClassVar[int]
-    MECHANOCHEMISTRY_FIELD_NUMBER: _ClassVar[int]
     CONDITIONS_ARE_DYNAMIC_FIELD_NUMBER: _ClassVar[int]
     DETAILS_FIELD_NUMBER: _ClassVar[int]
+    MECHANOCHEMISTRY_FIELD_NUMBER: _ClassVar[int]
     temperature: TemperatureConditions
     pressure: PressureConditions
     stirring: StirringConditions
@@ -579,10 +647,10 @@ class ReactionConditions(_message.Message):
     flow: FlowConditions
     reflux: bool
     ph: float
-    mechanochemistry: MechanochemistryConditions
     conditions_are_dynamic: bool
     details: str
-    def __init__(self, temperature: _Optional[_Union[TemperatureConditions, _Mapping]] = ..., pressure: _Optional[_Union[PressureConditions, _Mapping]] = ..., stirring: _Optional[_Union[StirringConditions, _Mapping]] = ..., illumination: _Optional[_Union[IlluminationConditions, _Mapping]] = ..., electrochemistry: _Optional[_Union[ElectrochemistryConditions, _Mapping]] = ..., flow: _Optional[_Union[FlowConditions, _Mapping]] = ..., reflux: bool = ..., ph: _Optional[float] = ..., mechanochemistry: _Optional[_Union[MechanochemistryConditions, _Mapping]] = ..., conditions_are_dynamic: bool = ..., details: _Optional[str] = ...) -> None: ...
+    mechanochemistry: MechanochemistryConditions
+    def __init__(self, temperature: _Optional[_Union[TemperatureConditions, _Mapping]] = ..., pressure: _Optional[_Union[PressureConditions, _Mapping]] = ..., stirring: _Optional[_Union[StirringConditions, _Mapping]] = ..., illumination: _Optional[_Union[IlluminationConditions, _Mapping]] = ..., electrochemistry: _Optional[_Union[ElectrochemistryConditions, _Mapping]] = ..., flow: _Optional[_Union[FlowConditions, _Mapping]] = ..., reflux: bool = ..., ph: _Optional[float] = ..., conditions_are_dynamic: bool = ..., details: _Optional[str] = ..., mechanochemistry: _Optional[_Union[MechanochemistryConditions, _Mapping]] = ...) -> None: ...
 
 class TemperatureConditions(_message.Message):
     __slots__ = ("control", "setpoint", "measurements")
@@ -1640,6 +1708,24 @@ class Length(_message.Message):
     precision: float
     units: Length.LengthUnit
     def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Length.LengthUnit, str]] = ...) -> None: ...
+
+class Angle(_message.Message):
+    __slots__ = ("value", "precision", "units")
+    class AngleUnit(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+        __slots__ = ()
+        UNSPECIFIED: _ClassVar[Angle.AngleUnit]
+        DEGREES: _ClassVar[Angle.AngleUnit]
+        RADIANS: _ClassVar[Angle.AngleUnit]
+    UNSPECIFIED: Angle.AngleUnit
+    DEGREES: Angle.AngleUnit
+    RADIANS: Angle.AngleUnit
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    PRECISION_FIELD_NUMBER: _ClassVar[int]
+    UNITS_FIELD_NUMBER: _ClassVar[int]
+    value: float
+    precision: float
+    units: Angle.AngleUnit
+    def __init__(self, value: _Optional[float] = ..., precision: _Optional[float] = ..., units: _Optional[_Union[Angle.AngleUnit, str]] = ...) -> None: ...
 
 class Wavelength(_message.Message):
     __slots__ = ("value", "precision", "units")
