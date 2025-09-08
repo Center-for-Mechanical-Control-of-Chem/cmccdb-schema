@@ -585,8 +585,12 @@ class ProtoTemplater:
                         prepped = cls.prep_proto(v)
                         if prepped is not Placeholders.InvalidParameterPlaceholder:
                             new[k] = prepped
-            if len(new) == 0 or len(new) == 1 and next(iter(new.keys())) == "reaction_role":
+            if len(new) == 0:
                 new = Placeholders.InvalidParameterPlaceholder
+            elif len(new) == 1:
+                key = next(iter(new.keys()))
+                if key in {"reaction_role"} or key == 'type' and new[key] == "UNSPECIFIED":
+                    new = Placeholders.InvalidParameterPlaceholder
         elif isinstance(proto, list):
             new = []
             for p in proto:
