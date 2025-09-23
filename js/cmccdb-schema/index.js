@@ -15,9 +15,8 @@
  */
 
 "use strict";
-import * as reaction_json from '.reaction_pb.json'
 module.exports = {
     ...require('./proto/dataset_pb'),
     ...require('./proto/reaction_pb'),
-    "reaction_json":reaction_json
+    "reaction_json":require('./reaction_pb.json')
 };
