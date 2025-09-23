@@ -9,7 +9,7 @@ def camelCase(name):
 def build_proto_tree(root):
 
     if ProtoHandler.is_enum_type(root):
-        return {'allowedValues':dict(ProtoHandler.enum_num_iter(root))}
+        return {'allowedValues':{v:n for n,v in ProtoHandler.enum_num_iter(root)}}
     else:
         oneofs = ProtoHandler.oneof_iter(root)
         if len(oneofs) == 1 and oneofs[0].__name__ == "kind":
