@@ -841,6 +841,15 @@ class ProtoHandler:
         else:
             return [(e.name,e.value) for e in obj_type]
     @classmethod
+    def enum_num_iter(cls, obj_type):
+        if isinstance(obj_type, ProtoType):
+            obj_type = obj_type.value_type
+        if isinstance(obj_type, cls.GProtoDescriptorWrapper):
+            name_map = list(obj_type.desc.values_by_name.keys())
+            return [(num,name_map[i]) for i,(num,value) in enumerate(obj_type.desc.values_by_number.items())]
+        else:
+            return [((e.value if isinstance(e.value, int) else i),e.name) for i,e in enumerate(obj_type)]
+    @classmethod
     def is_oneof_type(cls, field_type):
         if isinstance(field_type, ProtoType):
             field_type = field_type.value_type
