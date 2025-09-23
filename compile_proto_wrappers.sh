@@ -23,6 +23,7 @@ protoc \
   --js_out=import_style=commonjs,binary:js \
   ../cmccdb-schema/proto/*.proto
 
+cp ../cmccdb-schema/proto/*.proto ../cmccdb-schema/js/cmccdb-schema/proto
 python patch_proto.py
 
 #echo 'WARNING: due to current code structure, you will need to run `protoParsing.nb` to rebuild `parallel_proto.py`'
