@@ -18,7 +18,6 @@
   },
   "homepage": "https://www.chem.tamu.edu/cmcc/",
   "dependencies": {
-    "protobufjs": "<7.5.4",
     "google-protobuf": "<3.20"
   },
   "devDependencies": {

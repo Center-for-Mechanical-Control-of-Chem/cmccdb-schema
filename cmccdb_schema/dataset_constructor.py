@@ -831,7 +831,7 @@ class ProtoHandler:
         if cls.is_protobuf_obj(field_type):
             return field_type.is_enum_type()
         else:
-            return issubclass(field_type, enum.Enum)
+            return isinstance(field_type, type) and issubclass(field_type, enum.Enum)
     @classmethod
     def enum_vals_iter(cls, obj_type):
         if isinstance(obj_type, ProtoType):
@@ -858,7 +858,10 @@ class ProtoHandler:
         if cls.is_protobuf_obj(field_type):
             return field_type.is_oneof_type()
         else:
-            return issubclass(field_type, cls.parallel_proto.OneOfType)
+            return (
+                    hasattr(cls.parallel_proto, 'OneOfType')
+                    and issubclass(field_type, cls.parallel_proto.OneOfType)
+            )
     @classmethod
     def is_message_type(cls, field_type):
         if isinstance(field_type, ProtoType):
