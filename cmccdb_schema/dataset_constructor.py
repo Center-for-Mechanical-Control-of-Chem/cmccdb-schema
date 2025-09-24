@@ -87,7 +87,11 @@ class ProtoMessage:
     def initialize_fields(self):
         value_type = ProtoHandler.get_field_type(self.type, 'value', raise_on_missing=False)
         if value_type is None:
-            return {}
+            type_type = ProtoHandler.get_field_type(self.type, 'type', raise_on_missing=False)
+            if type_type is None:
+                return {}
+            else:
+                return {"type":type_type}
         else:
             return {'value':value_type}
     def __repr__(self):
@@ -400,7 +404,7 @@ class ProtoContainer:
             if ProtoHandler.is_value_type(self.type.value_type):
                 return Placeholders.TemplateParameter
             else:
-                return self.values[0].to_template()
+                return self.get_default_message().to_template()
 
     def has_path(self, key_path):
         return self.get_default_message().has_path(key_path)
