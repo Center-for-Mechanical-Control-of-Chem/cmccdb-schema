@@ -75,10 +75,21 @@ class ProtoType:
                 # self.key_type.__name__,
                 self.value_type.__name__
             )
+    def to_template(self, key_name=None):
+        if ProtoHandler.is_value_type(self.value_type):
+            return Placeholders.TemplateParameter
+        else:
+            return self
 class ProtoMessage:
     def __init__(self, proto_type, data:dict=None):
         self.type = proto_type
-        self.fields = data if data is not None else {}
+        self.fields = data if data is not None else self.initialize_fields()
+    def initialize_fields(self):
+        value_type = ProtoHandler.get_field_type(self.type, 'value', raise_on_missing=False)
+        if value_type is None:
+            return {}
+        else:
+            return {'value':value_type}
     def __repr__(self):
         return "{}({}, {})".format(
             type(self).__name__,
@@ -120,9 +131,8 @@ class ProtoMessage:
                 if fields is None:
                     fields = {}
                 ProtoMessage.update_field_dict(fields, {final_key:data}, optional=optional)
-
-            if field_name == "time":
-                raise ValueError(key_path)
+            # if field_name == "time":
+            #     raise ValueError(key_path)
             msg = self
             if len(key_path) > 0:
                 msg = msg[key_path[0]]
@@ -204,7 +214,11 @@ class ProtoMessage:
             self.update_fields(proto.fields, optional=optional)
     def to_template(self, key_name=None):
         return {
-            k: v.to_template(key_name=k) if isinstance(v, (ProtoMessage, ProtoContainer)) else v
+            k: (
+                v.to_template(key_name=k)
+                    if isinstance(v, (ProtoMessage, ProtoContainer, ProtoType)) else
+                v
+            )
             for k, v in self.fields.items()
         }
 
@@ -471,8 +485,8 @@ class ProtoTemplater:
         return valid, value
     def apply(self, values):
         if len(values) != len(self.template_paths):
-            raise ValueError("expected {} values got {} ({})".format(
-                len(self.template_paths), len(values), values,
+            raise ValueError("expected {} values got {} ({} for {})".format(
+                len(self.template_paths), len(values), values, self.template_paths
             ))
         copy_tree = self.spec.copy() # shallow copy
         if self.validator is not None:
@@ -992,12 +1006,14 @@ class ProtoHandler:
             container_type = None
         return ProtoType(key_type, value_type, container_type)
     @classmethod
-    def get_field_type(cls, root_type, field_name):
+    def get_field_type(cls, root_type, field_name, raise_on_missing=True, default=None):
         for f in cls.field_iter(root_type):
             if f.name == field_name: return cls.resolve_type(f.type)
-        raise ValueError("no field '{}' in {}".format(
-            field_name, root_type
-        ))
+        if raise_on_missing:
+            raise ValueError("no field '{}' in {}".format(
+                field_name, root_type
+            ))
+        return default
 
     MessageField = collections.namedtuple("MessageField", ["name", "type"])
     @classmethod
@@ -1439,7 +1455,8 @@ class DatasetConstructor:
                 else:
                     break
             if trailing_spaces > 0:
-                diff = max_row - len(row)
+                diff = len(row) - max_row
+                if diff < 0: diff = 0
                 trailing_spaces = min(trailing_spaces, diff)
                 row = row[:-trailing_spaces]
         return [
