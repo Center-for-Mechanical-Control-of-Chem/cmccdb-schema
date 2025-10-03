@@ -81,19 +81,25 @@ class ProtoType:
         else:
             return self
 class ProtoMessage:
-    def __init__(self, proto_type, data:dict=None):
+    default_constructable = False
+    def __init__(self, proto_type, data:dict=None, default_constructable=None):
+        if default_constructable is None:
+            default_constructable = self.default_constructable
         self.type = proto_type
-        self.fields = data if data is not None else self.initialize_fields()
-    def initialize_fields(self):
-        value_type = ProtoHandler.get_field_type(self.type, 'value', raise_on_missing=False)
-        if value_type is None:
-            type_type = ProtoHandler.get_field_type(self.type, 'type', raise_on_missing=False)
-            if type_type is None:
-                return {}
+        self.fields = data if data is not None else self.initialize_fields(default_constructable=default_constructable)
+    def initialize_fields(self, default_constructable=False):
+        if default_constructable:
+            value_type = ProtoHandler.get_field_type(self.type, 'value', raise_on_missing=False)
+            if value_type is None:
+                type_type = ProtoHandler.get_field_type(self.type, 'type', raise_on_missing=False)
+                if type_type is None:
+                    return {}
+                else:
+                    return {"type":type_type}
             else:
-                return {"type":type_type}
+                return {'value':value_type}
         else:
-            return {'value':value_type}
+            return {}
     def __repr__(self):
         return "{}({}, {})".format(
             type(self).__name__,
@@ -300,6 +306,10 @@ class ProtoContainer:
             return self.get_default_message().get_field(field_name)
         else:
             if self.type.key_type is not None:
+                if len(self.keys) <= field_name:
+                    raise ValueError(f"object doesn't have enough keys, has {len(self.keys)}, requested {field_name}, for {self}")
+                if len(self.values) <= field_name:
+                    raise ValueError(f"object doesn't have enough values, has {len(self.values)}, requested {field_name}, for {self}")
                 return {
                     "key": self.keys[field_name],
                     "value": self.values[field_name]
@@ -490,7 +500,10 @@ class ProtoTemplater:
     def apply(self, values):
         if len(values) != len(self.template_paths):
             raise ValueError("expected {} values got {} ({} for {})".format(
-                len(self.template_paths), len(values), values, self.template_paths
+                len(self.template_paths), len(values), values, "\n".join(
+                    "->".join(str(ss) for ss in s)
+                    for s in self.template_paths
+                )
             ))
         copy_tree = self.spec.copy() # shallow copy
         if self.validator is not None:
@@ -1484,30 +1497,36 @@ class DatasetConstructor:
     @classmethod
     def setup_template(cls, common, variant, extra_fields=None, optional_fields=None):
 
-        rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
-        nt_tree = cls.parse_csv_rows(common[:-1])
-        rxn.insert_tree(nt_tree)
-        if extra_fields is not None:
-            rxn.insert_dict(extra_fields)
-        if optional_fields is not None:
-            rxn.insert_dict(optional_fields, optional=True)
-        templater = ProtoTemplater.from_proto(rxn)
-        csv_data = cls.sanitize_csv_data(
-            [s for s in common[-1] if len(s) > 0],
-            len(templater.template_paths)
-        )
-        base_template = templater.apply(csv_data)
+        cur_const = ProtoMessage.default_constructable
+        try:
+            ProtoMessage.default_constructable = True
+            rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
+            nt_tree = cls.parse_csv_rows(common[:-1])
+            rxn.insert_tree(nt_tree)
+            if extra_fields is not None:
+                rxn.insert_dict(extra_fields)
+            if optional_fields is not None:
+                rxn.insert_dict(optional_fields, optional=True)
+            templater = ProtoTemplater.from_proto(rxn)
+            csv_data = cls.sanitize_csv_data(
+                [s for s in common[-1] if len(s) > 0],
+                len(templater.template_paths)
+            )
+            base_template = templater.apply(csv_data)
 
-        rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
-        var_tree = cls.parse_csv_rows(variant)
-        rxn.insert_tree(var_tree)
-        var_template = rxn.to_template()
-
-        return ProtoTemplater(
-            ProtoTemplater.merge_templates(
+            ProtoMessage.default_constructable = False
+            rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
+            var_tree = cls.parse_csv_rows(variant)
+            rxn.insert_tree(var_tree)
+            var_template = rxn.to_template()
+        finally:
+            ProtoMessage.default_constructable = cur_const
+        combo = ProtoTemplater.merge_templates(
                 base_template,
                 var_template
-            ),
+            )
+        return ProtoTemplater(
+            combo,
             rxn
         )
 
