@@ -1503,6 +1503,8 @@ class DatasetConstructor:
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
             nt_tree = cls.parse_csv_rows(common[:-1])
             rxn.insert_tree(nt_tree)
+            ProtoMessage.default_constructable = False
+
             if extra_fields is not None:
                 rxn.insert_dict(extra_fields)
             if optional_fields is not None:
@@ -1514,7 +1516,6 @@ class DatasetConstructor:
             )
             base_template = templater.apply(csv_data)
 
-            ProtoMessage.default_constructable = False
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
             var_tree = cls.parse_csv_rows(variant)
             rxn.insert_tree(var_tree)
