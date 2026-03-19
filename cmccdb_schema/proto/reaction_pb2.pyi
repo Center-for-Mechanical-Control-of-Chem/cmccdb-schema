@@ -947,7 +947,7 @@ class ElectrochemistryConditions(_message.Message):
     def __init__(self, type: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryType, str]] = ..., details: _Optional[str] = ..., current: _Optional[_Union[Current, _Mapping]] = ..., voltage: _Optional[_Union[Voltage, _Mapping]] = ..., anode_material: _Optional[str] = ..., cathode_material: _Optional[str] = ..., electrode_separation: _Optional[_Union[Length, _Mapping]] = ..., measurements: _Optional[_Iterable[_Union[ElectrochemistryConditions.ElectrochemistryMeasurement, _Mapping]]] = ..., cell: _Optional[_Union[ElectrochemistryConditions.ElectrochemistryCell, _Mapping]] = ...) -> None: ...
 
 class MechanochemistryConditions(_message.Message):
-    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "cell_material", "number_of_balls", "ball_radius", "cap_material", "g_force", "dimension", "geometry")
+    __slots__ = ("type", "details", "frequency", "force", "duration", "ball_material", "cell_material", "number_of_balls", "ball_radius", "cap_material", "g_force", "dimension", "geometry", "contact_size", "model_name")
     class MechanochemistryType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         UNSPECIFIED: _ClassVar[MechanochemistryConditions.MechanochemistryType]
@@ -979,6 +979,8 @@ class MechanochemistryConditions(_message.Message):
     G_FORCE_FIELD_NUMBER: _ClassVar[int]
     DIMENSION_FIELD_NUMBER: _ClassVar[int]
     GEOMETRY_FIELD_NUMBER: _ClassVar[int]
+    CONTACT_SIZE_FIELD_NUMBER: _ClassVar[int]
+    MODEL_NAME_FIELD_NUMBER: _ClassVar[int]
     type: MechanochemistryConditions.MechanochemistryType
     details: str
     frequency: Frequency
@@ -992,7 +994,9 @@ class MechanochemistryConditions(_message.Message):
     g_force: GravitationalAcceleration
     dimension: _containers.RepeatedCompositeFieldContainer[Length]
     geometry: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., cell_material: _Optional[str] = ..., number_of_balls: _Optional[int] = ..., ball_radius: _Optional[_Union[Length, _Mapping]] = ..., cap_material: _Optional[str] = ..., g_force: _Optional[_Union[GravitationalAcceleration, _Mapping]] = ..., dimension: _Optional[_Iterable[_Union[Length, _Mapping]]] = ..., geometry: _Optional[_Iterable[str]] = ...) -> None: ...
+    contact_size: Length
+    model_name: str
+    def __init__(self, type: _Optional[_Union[MechanochemistryConditions.MechanochemistryType, str]] = ..., details: _Optional[str] = ..., frequency: _Optional[_Union[Frequency, _Mapping]] = ..., force: _Optional[_Union[Force, _Mapping]] = ..., duration: _Optional[_Union[Time, _Mapping]] = ..., ball_material: _Optional[str] = ..., cell_material: _Optional[str] = ..., number_of_balls: _Optional[int] = ..., ball_radius: _Optional[_Union[Length, _Mapping]] = ..., cap_material: _Optional[str] = ..., g_force: _Optional[_Union[GravitationalAcceleration, _Mapping]] = ..., dimension: _Optional[_Iterable[_Union[Length, _Mapping]]] = ..., geometry: _Optional[_Iterable[str]] = ..., contact_size: _Optional[_Union[Length, _Mapping]] = ..., model_name: _Optional[str] = ...) -> None: ...
 
 class FlowConditions(_message.Message):
     __slots__ = ("type", "details", "pump_type", "tubing")
@@ -1335,6 +1339,8 @@ class Analysis(_message.Message):
         ED: _ClassVar[Analysis.AnalysisType]
         OPTICAL_ROTATION: _ClassVar[Analysis.AnalysisType]
         CAD: _ClassVar[Analysis.AnalysisType]
+        XAS: _ClassVar[Analysis.AnalysisType]
+        EDX: _ClassVar[Analysis.AnalysisType]
     UNSPECIFIED: Analysis.AnalysisType
     CUSTOM: Analysis.AnalysisType
     LC: Analysis.AnalysisType
@@ -1361,6 +1367,8 @@ class Analysis(_message.Message):
     ED: Analysis.AnalysisType
     OPTICAL_ROTATION: Analysis.AnalysisType
     CAD: Analysis.AnalysisType
+    XAS: Analysis.AnalysisType
+    EDX: Analysis.AnalysisType
     class DataEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]

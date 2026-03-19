@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 import csv, os, sys
 import enum, dataclasses, uuid, collections
 import itertools
 import re
+import base64
+import hashlib
+import json
+import tempfile
+import numpy as np
 import pandas as pd
 
 
@@ -86,7 +93,26 @@ class ProtoMessage:
         if default_constructable is None:
             default_constructable = self.default_constructable
         self.type = proto_type
-        self.fields = data if data is not None else self.initialize_fields(default_constructable=default_constructable)
+        self.fields = (
+            data
+                if data is not None else
+            self.initialize_fields(default_constructable=default_constructable)
+        )
+    def default_value(self, type:ProtoType):
+        if ProtoHandler.is_message_type(type):
+            msg = ProtoMessage(type.value_type).default_construct()
+            if type.key_type is not None or type.container_type is not None:
+                submsg = msg
+                msg = ProtoContainer(type)
+                msg.add_message(submsg)
+            return msg
+        else:
+            return None
+    def default_construct(self):
+        for f in ProtoHandler.field_iter(self.type):
+            if f.name not in self.fields:
+                self.fields[f.name] = self.default_value(f.type)
+        return self
     def initialize_fields(self, default_constructable=False):
         if default_constructable:
             value_type = ProtoHandler.get_field_type(self.type, 'value', raise_on_missing=False)
@@ -222,15 +248,27 @@ class ProtoMessage:
                     self.type, proto.type
                 ))
             self.update_fields(proto.fields, optional=optional)
+    @property
+    def type_name(self):
+        if isinstance(self.type, ProtoType):
+            return self.type.value_type.name
+        elif hasattr(self.type, 'desc'):
+            return self.type.desc.name
+        else:
+            return None
+    value_data_types = {'Data'}
     def to_template(self, key_name=None):
-        return {
-            k: (
-                v.to_template(key_name=k)
-                    if isinstance(v, (ProtoMessage, ProtoContainer, ProtoType)) else
-                v
-            )
-            for k, v in self.fields.items()
-        }
+        if self.type_name in self.value_data_types:
+            return Placeholders.TemplateParameter
+        else:
+            return {
+                k: (
+                    v.to_template(key_name=k)
+                        if isinstance(v, (ProtoMessage, ProtoContainer, ProtoType)) else
+                    v
+                )
+                for k, v in self.fields.items()
+            }
 
 class ProtoContainer:
     def __init__(self, proto_type:ProtoType):
@@ -238,6 +276,8 @@ class ProtoContainer:
         self.template_keys = []
         self.keys = []
         self.values = []
+    def default_construct(self):
+        self.get_default_message()
     # def get_message(self):
     #     return ProtoMessage(self.type.value_type)
     def __repr__(self):
@@ -333,6 +373,7 @@ class ProtoContainer:
                         fields = {}
                     fields.update({final_key: data})
                 msg = self.get_default_message()
+                root = msg
                 if msg.has_path(key_path) and self.type.container_type is not None:
                     msg = ProtoMessage(self.type.value_type)
                     self.add_message(msg, allow_updates=True, optional=optional)
@@ -340,6 +381,8 @@ class ProtoContainer:
                     msg = msg[key_path[0]]
                     for m in key_path[1:]:
                         msg = msg[m]
+                if isinstance(msg.type, ProtoType) and msg.type.container_type is not None:
+                    _ = msg.get_default_message()
                 if fields is not None:
                     if units is not None:
                         unit_field = ProtoHandler.resolve_unit_message(fields, units)
@@ -352,9 +395,11 @@ class ProtoContainer:
                 elif units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(msg, units)
                     msg.add_message(unit_field, allow_updates=True, optional=optional)
+                elif ProtoMessage.default_constructable: #TODO: make this less hack-y (using as a global switch for now)
+                    msg.default_construct()
                 return msg
         except Exception as e:
-            raise ValueError(f"error in adding field {field_name}") from e
+            raise ValueError(f"error in adding field `{field_name}` to {self}") from e
     def insert_tree(self, subtree, optional=False):
         msg = self
         for header in subtree:
@@ -399,20 +444,34 @@ class ProtoContainer:
         for m in self.values:
             m.validate()
 
-    def to_template(self, key_name=None):
+    use_uuid_keys = False
+    def to_template(self, key_name=None, use_uuid_keys=None):
+        if use_uuid_keys is None:
+            use_uuid_keys = self.use_uuid_keys
         if self.type.key_type is not None:
             return [
                 {
-                    "key": k if k is not None else key_name+"-"+str(uuid.uuid4())[:6],
+                    "key":
+                        (
+                            k
+                                if k is not None else
+                            key_name+"-"+(
+                                str(uuid.uuid4())[:6]
+                                    if use_uuid_keys else
+                                str(i)
+                            )
+                        ),
                     "value": v.to_template()
                 }
-                for k, v in zip(self.keys, self.values)
+                for i,(k, v) in enumerate(zip(self.keys, self.values))
             ]
         elif self.type.container_type is not None:
             return [v.to_template() for v in self.values]
         else:
             if ProtoHandler.is_value_type(self.type.value_type):
                 return Placeholders.TemplateParameter
+            # elif self.type.value_type:
+            #     return Placeholders.TemplateParameter
             else:
                 return self.get_default_message().to_template()
 
@@ -498,12 +557,21 @@ class ProtoTemplater:
             valid = False
         return valid, value
     def apply(self, values):
-        if len(values) != len(self.template_paths):
-            raise ValueError("expected {} values got {} ({} for {})".format(
-                len(self.template_paths), len(values), values, "\n".join(
-                    "->".join(str(ss) for ss in s)
-                    for s in self.template_paths
+        nt = len(self.template_paths)
+        nv = len(values)
+        if nv != nt:
+            templates = list(self.template_paths)
+            error_values = list(values)
+            if nt > nv:
+                error_values = error_values + ["<MISSING>"] * (nt - nv)
+            else:
+                templates = templates + [["<NO TEMPLATE>"]] * (nv - nt)
+            errors =  "\n".join(
+                    "{} = {!r}".format("->".join(str(ss) for ss in s), v)
+                    for s,v in zip(templates, error_values)
                 )
+            raise ValueError("expected {} values got {}: \n {}".format(
+                nt, nv, errors
             ))
         copy_tree = self.spec.copy() # shallow copy
         if self.validator is not None:
@@ -594,7 +662,7 @@ class ProtoTemplater:
         return copy_tree
 
     @classmethod
-    def prep_proto(cls, proto):
+    def prep_proto(cls, proto, dataset_id=None):
         if isinstance(proto, dict):
             new = {}
             for k,v in proto.items():
@@ -607,13 +675,13 @@ class ProtoTemplater:
                         for vv in v:
                             if vv["key"] is Placeholders.InvalidParameterPlaceholder: continue
                             if vv["value"] is Placeholders.InvalidParameterPlaceholder: continue
-                            prepped = cls.prep_proto(vv["value"])
+                            prepped = cls.prep_proto(vv["value"], dataset_id=dataset_id)
                             if prepped is Placeholders.InvalidParameterPlaceholder: continue
                             subv[vv["key"]] = prepped
                         if len(subv) > 0:
                             new[k] = subv
                     else:
-                        prepped = cls.prep_proto(v)
+                        prepped = cls.prep_proto(v, dataset_id=dataset_id)
                         if prepped is not Placeholders.InvalidParameterPlaceholder:
                             new[k] = prepped
             if len(new) == 0:
@@ -626,11 +694,16 @@ class ProtoTemplater:
             new = []
             for p in proto:
                 if p is Placeholders.InvalidParameterPlaceholder: continue
-                prepped = cls.prep_proto(p)
+                prepped = cls.prep_proto(p, dataset_id=dataset_id)
                 if prepped is Placeholders.InvalidParameterPlaceholder:continue
                 new.append(prepped)
             if len(new) == 0:
                 new = Placeholders.InvalidParameterPlaceholder
+        elif isinstance(proto, str):
+            if proto.startswith('url('):
+                new = {'url':dataset_id+"_"+proto[4:-1]}
+            else:
+                new = proto
         else:
             new = proto
         return new
@@ -669,6 +742,9 @@ class ProtoHandler:
         def is_oneof_type(self):
             from google.protobuf.descriptor import OneofDescriptor
             return isinstance(self.desc, OneofDescriptor)
+        @property
+        def name(self):
+            return self.desc.name
     try:
         from .proto import reaction_pb2 as parallel_proto
     except ImportError:
@@ -1281,6 +1357,45 @@ class ProtoHandler:
             msg = unit_msg
         return msg
 
+
+HASH_TYPE = hashlib.md5
+def _update_fs_hash(fs, sha, buff):
+    mv = memoryview(buff)
+    while n := fs.readinto(mv):
+        sha.update(mv[:n])
+
+def _digest_hash(sha, base):
+    digest = sha.digest()
+    if base == 85:
+        hash = base64.b85encode(digest).decode()
+    elif base == 64:
+        hash = base64.b64encode(digest).decode()
+    else:# base == 16:
+        hash = base64.b16encode(digest).decode()
+    # else:
+    #     hash = sha.hexdigest()
+    hash = hash.replace("/", '-')
+    return hash
+
+HASH_ENCODING_BASE = 64
+def bytestream_hash(filestream, base=None):
+    """
+    https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
+    """
+    h = HASH_TYPE()
+    b = bytearray(128 * 1024)
+    _update_fs_hash(filestream, h, b)
+    if base is None:
+        base = HASH_ENCODING_BASE
+    return _digest_hash(h, base)
+
+def json_hash(spec:dict|list|str):
+    # serialize JSON and use sha256
+    with tempfile.TemporaryFile(mode="w+b") as fp:
+        fp.write(json.dumps(spec).encode())
+        fp.seek(0)
+        return bytestream_hash(fp)
+
 class DatasetBlocks(enum.Enum):
     REACTION_BLOCK = "REACTION"
     VARIANTS_BLOCK = "VARIANTS"
@@ -1299,7 +1414,41 @@ class DatasetConstructor:
         self._template = None
 
     @classmethod
-    def from_iter(cls, iterable, extra_fields=None, optional_fields=None):
+    def prep_object_json(cls, obj):
+        if isinstance(obj, memoryview):
+            obj = obj.hex()
+        if dataclasses.is_dataclass(obj):
+            obj = dataclasses.asdict(obj)
+        if isinstance(obj, dict):
+            return {
+                k: cls.prep_object_json(obj[k])
+                for k in sorted(obj.keys())
+            }
+        elif isinstance(obj, (list, tuple)):
+            return [cls.prep_object_json(o) for o in obj]
+        elif isinstance(obj, bytes):
+            return obj.hex()
+        elif isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        elif isinstance(obj, (np.floating,)):
+            return float(obj)
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, Placeholders):
+            return f'<{obj.name}:{obj.value}>'
+            # return base64.b16encode(obj).decode('ascii')
+        elif isinstance(obj, (set,)):
+            return cls.prep_object_json(obj)
+        else:
+            return obj
+
+    def get_id(self):
+        js = self.prep_object_json(self.template.spec)
+        # print(js)
+        return json_hash(js)
+
+    @classmethod
+    def from_iter(cls, iterable, extra_fields=None, optional_fields=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
         blocks = []
         common = []
         variants = []
@@ -1358,7 +1507,7 @@ class DatasetConstructor:
         ]
 
     @classmethod
-    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None, optional_fields=None):
+    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None, optional_fields=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
         # adapted from templating.py
         if suffix is None:
             _, suffix = os.path.splitext(file_name_or_buffer)
@@ -1538,7 +1687,6 @@ class DatasetConstructor:
                                                  extra_fields=self.extra_fields,
                                                  optional_fields=self.optional_fields)
         return self._template
-
     @classmethod
     def enumerate_spreadsheet(cls, file,
                               name=None,
@@ -1568,7 +1716,8 @@ class DatasetConstructor:
                     cls.sanitize_csv_data(row, len(parser.template.template_paths))
                 )
                 stripped_missings = ProtoTemplater.prep_proto(
-                    templated_proto
+                    templated_proto,
+                    dataset_id=id
                 )
                 protos.append(
                     dict(

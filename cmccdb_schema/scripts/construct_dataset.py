@@ -27,6 +27,15 @@ Options:
 """
 
 import docopt
+import hashlib
+
+def md5(fname):
+    # https://stackoverflow.com/a/3431838/5720002
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 def main(kwargs):
     import os, sys, datetime
@@ -67,9 +76,11 @@ def main(kwargs):
         kwargs["--email"]
     )
 
+    id = md5(filename)
     dataset = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         filename,
         name=data_name,
+        id=id,
         optional_fields={
             'record_created': {
                 "time": {"value": str(datetime.datetime.now())},

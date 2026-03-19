@@ -797,6 +797,8 @@ message MechanochemistryConditions {
   optional GravitationalAcceleration g_force = 11;
   repeated Length dimension = 12;
   repeated string geometry = 13; //  EXPERIMENTAL: to support twin screw segment geometries
+  optional Length contact_size = 14;
+  optional string model_name = 15;
 }
 
 message FlowConditions {
@@ -1167,6 +1169,8 @@ message Analysis {
     ED = 23;  // Electron diffraction, including MicroED.
     OPTICAL_ROTATION = 24;  // optical rotation.
     CAD = 25;  // Charged Aerosol Detector.
+    XAS = 26; // X-ray absorption
+    EDX = 27; // Energy-dispersive X-ray
   }
   AnalysisType type = 1;
   // Any details about analysis (e.g., NMR type, columns, gradients).
