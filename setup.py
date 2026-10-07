@@ -31,7 +31,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=setuptools.find_packages(),
-    package_data={"cmccdb_schema.proto": ["*.pyi"]},
+    package_data={"cmccdb_schema.proto": ["*.pyi"],
+                  "cmccdb_schema.orm": ["corpus_manifest.json", "testdata/*.pbtxt"]},
     python_requires=">=3.10",
     install_requires=[
         "docopt>=0.6.2",

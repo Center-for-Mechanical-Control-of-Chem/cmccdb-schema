@@ -22,7 +22,7 @@ import pytest
 from rdkit import RDLogger
 
 from cmccdb_schema import message_helpers, validations
-from cmccdb_schema.logging import get_logger
+from cmccdb_schema.logging_helpers import get_logger
 from cmccdb_schema.proto import dataset_pb2, reaction_pb2
 from cmccdb_schema.scripts import process_dataset
 
@@ -48,7 +48,7 @@ class TestProcessDataset:
         reaction1.provenance.record_created.person.username = "test"
         reaction1.provenance.record_created.person.email = "test@example.com"
         dataset1 = dataset_pb2.Dataset(
-            dataset_id="ord_dataset-00000000000000000000000000000000",
+            dataset_id="cmcc_dataset-00000000000000000000000000000000",
             reactions=[reaction1],
         )
         dataset1_filename = (tmp_path / "dataset1.pbtxt").as_posix()
@@ -101,11 +101,11 @@ class TestProcessDataset:
             "--update",
         ]
         process_dataset.main(docopt.docopt(process_dataset.__doc__, argv))
-        expected_output = os.path.join(dirname, "data", "00", "ord_dataset-00000000000000000000000000000000.pb.gz")
+        expected_output = os.path.join(dirname, "data", "00", "cmcc_dataset-00000000000000000000000000000000.pb.gz")
         assert os.path.exists(expected_output)
         dataset = message_helpers.load_message(expected_output, dataset_pb2.Dataset)
         assert len(dataset.reactions) == 1
-        assert dataset.reactions[0].reaction_id.startswith("ord-")
+        assert dataset.reactions[0].reaction_id.startswith("cmcc-")
 
 
 class TestSubmissionWorkflow:
@@ -120,11 +120,12 @@ class TestSubmissionWorkflow:
     _DEFAULT_BRANCH = "main"
 
     @pytest.fixture
-    def setup(self, tmp_path) -> tuple[str, str]:
+    def setup(self, tmp_path, monkeypatch) -> tuple[str, str]:
         test_subdirectory = tmp_path.as_posix()
-        os.chdir(test_subdirectory)
-        subprocess.run(["git", "init", "-b", self._DEFAULT_BRANCH], check=True)
-        subprocess.run(["git", "config", "--local", "user.email", "test@ord-schema"], check=True)
+        monkeypatch.chdir(test_subdirectory)
+        subprocess.run(["git", "init"], check=True)
+        subprocess.run(["git", "symbolic-ref", "HEAD", "refs/heads/" + self._DEFAULT_BRANCH], check=True)
+        subprocess.run(["git", "config", "--local", "user.email", "test@cmcc-schema"], check=True)
         subprocess.run(["git", "config", "--local", "user.name", "Test Runner"], check=True)
         # Add some initial data.
         reaction = reaction_pb2.Reaction()
@@ -138,8 +139,8 @@ class TestSubmissionWorkflow:
         reaction.provenance.record_created.time.value = "2020-01-01"
         reaction.provenance.record_created.person.username = "test"
         reaction.provenance.record_created.person.email = "test@example.com"
-        reaction.reaction_id = "ord-10aed8b5dffe41fab09f5b2cc9c58ad9"
-        dataset_id = "ord_dataset-64b14868c5cd46dd8e75560fd3589a6b"
+        reaction.reaction_id = "cmcc-10aed8b5dffe41fab09f5b2cc9c58ad9"
+        dataset_id = "cmcc_dataset-64b14868c5cd46dd8e75560fd3589a6b"
         dataset = dataset_pb2.Dataset(reactions=[reaction], dataset_id=dataset_id)
         # Make sure the initial dataset is valid.
         validations.validate_message(dataset)
@@ -279,7 +280,7 @@ class TestSubmissionWorkflow:
         component.amount.moles.value = 2
         component.amount.moles.units = reaction_pb2.Moles.MILLIMOLE
         reaction.outcomes.add().conversion.value = 25
-        reaction_id = "ord-10aed8b5dffe41fab09f5b2cc9c58ad9"
+        reaction_id = "cmcc-10aed8b5dffe41fab09f5b2cc9c58ad9"
         reaction.reaction_id = reaction_id
         reaction.provenance.record_created.time.value = "2020-01-01"
         reaction.provenance.record_created.person.username = "test"
@@ -288,7 +289,7 @@ class TestSubmissionWorkflow:
         this_dataset_filename = os.path.join(test_subdirectory, "test.pbtxt")
         message_helpers.write_message(dataset, this_dataset_filename)
         added, removed, changed, filenames = self._run(test_subdirectory)
-        assert added == {"ord-10aed8b5dffe41fab09f5b2cc9c58ad9"}
+        assert added == {"cmcc-10aed8b5dffe41fab09f5b2cc9c58ad9"}
         assert not removed
         assert not changed
         assert len(filenames) == 2
@@ -324,7 +325,7 @@ class TestSubmissionWorkflow:
         added, removed, changed, filenames = self._run(test_subdirectory)
         assert added == {"test"}
         assert not removed
-        assert changed == {"ord-10aed8b5dffe41fab09f5b2cc9c58ad9"}
+        assert changed == {"cmcc-10aed8b5dffe41fab09f5b2cc9c58ad9"}
         assert filenames == [dataset_filename]
         # Check for preservation of dataset and record IDs.
         updated_dataset = message_helpers.load_message(dataset_filename, dataset_pb2.Dataset)
@@ -340,7 +341,7 @@ class TestSubmissionWorkflow:
         message_helpers.write_message(dataset, dataset_filename)
         added, removed, changed, filenames = self._run(test_subdirectory)
         assert added == {"test_rename"}
-        assert removed == {"ord-10aed8b5dffe41fab09f5b2cc9c58ad9"}
+        assert removed == {"cmcc-10aed8b5dffe41fab09f5b2cc9c58ad9"}
         assert not changed
         assert filenames == [dataset_filename]
 

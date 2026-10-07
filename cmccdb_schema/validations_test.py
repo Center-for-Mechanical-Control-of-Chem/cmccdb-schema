@@ -445,7 +445,7 @@ def test_reaction_id():
     message = reaction_pb2.Reaction()
     _ = message.inputs["test"]
     message.outcomes.add()
-    message.reaction_id = "ord-c0bbd41f095a44a78b6221135961d809"
+    message.reaction_id = "cmcc-c0bbd41f095a44a78b6221135961d809"
     options = validations.ValidationOptions(validate_ids=True, require_provenance=False)
     output = _run_validation(message, recurse=False, options=options)
     assert len(output.errors) == 0
@@ -455,12 +455,12 @@ def test_reaction_id():
 @pytest.mark.parametrize(
     "reaction_id",
     (
-        "ord-c0bbd41f095a4",
-        "ord-c0bbd41f095a4c0bbd41f095a4c0bbd41f095a4",
+        "cmcc-c0bbd41f095a4",
+        "cmcc-c0bbd41f095a4c0bbd41f095a4c0bbd41f095a4",
         "foo-c0bbd41f095a44a78b6221135961d809",
-        "ord-C0BBD41F095A44A78B6221135961D809",
-        "ord-h0bbd41f095a44a78b6221135961d809",
-        "ord-notARealId",
+        "cmcc-C0BBD41F095A44A78B6221135961D809",
+        "cmcc-h0bbd41f095a44a78b6221135961d809",
+        "cmcc-notARealId",
         "",
     ),
 )
@@ -505,7 +505,7 @@ def test_dataset_bad_reaction_id():
 def test_dataset_records_and_ids():
     message = dataset_pb2.Dataset(
         reactions=[reaction_pb2.Reaction()],
-        reaction_ids=["ord-c0bbd41f095a44a78b6221135961d809"],
+        reaction_ids=["cmcc-c0bbd41f095a44a78b6221135961d809"],
     )
     options = validations.ValidationOptions(validate_ids=True)
     with pytest.raises(validations.ValidationError, match="not both"):

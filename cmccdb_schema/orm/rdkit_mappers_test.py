@@ -13,16 +13,11 @@
 # limitations under the License.
 
 """Tests for cmccdb_schema.orm.rdkit_mappers."""
-import platform
-
 import pytest
 from sqlalchemy import func, select
 
 from cmccdb_schema.orm.mappers import Mappers
 from cmccdb_schema.orm.rdkit_mappers import FingerprintType, RDKitMol, RDKitReaction
-
-pytestmark = pytest.mark.skipif(platform.machine() != "x86_64", reason="RDKit cartridge is required")
-
 
 def test_tanimoto_operator(test_session):
     query = (

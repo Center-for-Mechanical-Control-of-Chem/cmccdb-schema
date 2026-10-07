@@ -1,0 +1,820 @@
+{
+  "invalid": {
+    "b3m2a1/reduction_10.1021.acssuschemeng.3c01544-2025-05-12T06:27:12.712208.xlsx": {
+      "sha256": "c2a88d23d01a77062e81b0a98b6a3999aa0d34b02665b544c9c8a904c56135fa",
+      "exception": "ValueError",
+      "message": "error in adding field tempterature"
+    },
+    "completed/~$photomechanical_10.1039.D2FD00122E.xlsx": {
+      "sha256": "a56509277035f865d54f697560634f21da3e36da0c983cc6f72ebb79ec3b73eb",
+      "exception": "ValueError",
+      "message": "Excel file format cannot be determined, you must specify an engine manually."
+    },
+    "completed/~$reduction_10.1021.acssuschemeng.3c01544.xlsx": {
+      "sha256": "a56509277035f865d54f697560634f21da3e36da0c983cc6f72ebb79ec3b73eb",
+      "exception": "ValueError",
+      "message": "Excel file format cannot be determined, you must specify an engine manually."
+    },
+    "completed/~$sonogashira_10.1039.B915669K.xlsx": {
+      "sha256": "a56509277035f865d54f697560634f21da3e36da0c983cc6f72ebb79ec3b73eb",
+      "exception": "ValueError",
+      "message": "Excel file format cannot be determined, you must specify an engine manually."
+    },
+    "incomplete/co2_fixation_10.1039.D5MR00072F.xlsx": {
+      "sha256": "524a61d9e88098e75b5c7d90ab42eaea2bd6ddfa37ec21a4edd2cf70515abac0",
+      "exception": "ValueError",
+      "message": "expected 22 values got 24"
+    },
+    "incomplete/copper_10.1039.D3SC01591B.xlsx": {
+      "sha256": "ccaabb3a25c5a122b12b86cd96aab7e27bcc2bb683a70bf7fba581e37c280ff5",
+      "exception": "ValueError",
+      "message": "error in adding field `crystal_smiles`"
+    },
+    "incomplete/diels_alder_10.1126.science.adf5273.xlsx": {
+      "sha256": "b51746d33714a7f575216e7ecc65c69566d00ec2a5e122f40c68e180eefc9e44",
+      "exception": "ValueError",
+      "message": "error in adding field `force`"
+    },
+    "incomplete/reu/coronel.xlsx": {
+      "sha256": "e092b16735129a8be35fe00d24d8ed773f4d1a84d18c4cd34eaad2ccce509adf",
+      "exception": "ParseError",
+      "message": "Invalid enum value PLANETARY_MILL for enum type cmccdb.MechanochemistryConditions.MechanochemistryType at Dataset.reactions[0].conditions.mechanochemistry.type...."
+    },
+    "incomplete/reu/danurand.xlsx": {
+      "sha256": "952fd49fac27481d194f34d5b15f6cdb03a8df9e6a4416db10ff582e54825dde",
+      "exception": "ValueError",
+      "message": "error in adding field base"
+    },
+    "incomplete/reu/koschnich.xlsx": {
+      "sha256": "976a52be8159e644f5a3a2ef02c43c821ac5661bfa57fc48da90d18fefdf3a4d",
+      "exception": "ValueError",
+      "message": "error in adding field `amount`"
+    },
+    "incomplete/reu/lankford.xlsx": {
+      "sha256": "fdf452c93ad18fb870b32dfd00bbb668ee28f0d0bcd95d389df4bd5370a2ad31",
+      "exception": "ValueError",
+      "message": "expected 5 values got 6"
+    },
+    "incomplete/reu/poole.xlsx": {
+      "sha256": "5161ad220ea76b589659c9bb4fef0d3a7165c0bb968429e59f1e175aaadea087",
+      "exception": "ParseError",
+      "message": "Invalid enum value MORTAR_AND_PESTLE for enum type cmccdb.MechanochemistryConditions.MechanochemistryType at Dataset.reactions[0].conditions.mechanochemistry.type...."
+    },
+    "incomplete/reu/scally.xlsx": {
+      "sha256": "bb002daa3323b18fe0e4557cc5650a0b5b69b9fc4d6a937930158f680ea2b13e",
+      "exception": "ValueError",
+      "message": "expected to be on a reaction block"
+    },
+    "incomplete/reu/wilson.xlsx": {
+      "sha256": "76ad39c8d0ddc902a62041fa24c0338da6866600b1b9f9c3fbfa72764b004c08",
+      "exception": "ParseError",
+      "message": "Failed to parse reactions field: Failed to parse outcomes field: Failed to parse products field: Failed to parse measurements field: Couldn't parse float: nd at Dataset.reactions[1"
+    },
+    "incomplete/sonogashira_10.1039.c000674b.xlsx": {
+      "sha256": "e722b9a09a90f7ec1893cf42903896a7ed3f55f6266804cb8bb014ddc7aebccf",
+      "exception": "ValueError",
+      "message": "expected 22 values got 23"
+    }
+  },
+  "inventory": [
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-05-12T06:18:39.935791.pbtxt",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-05-12T06:18:39.935791.xlsx",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-07-29T22:10:37.016190.pbtxt",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-07-29T22:10:37.016190.xlsx",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-09-02T19:49:44.537906.pbtxt",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/PDI_synthesis_10.1002.ange.201913625-2025-09-02T19:49:44.537906.xlsx",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/arylation_10.1021.acscatal.6b00861-2025-05-12T06:15:06.172851.pbtxt",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/arylation_10.1021.acscatal.6b00861-2025-05-12T06:15:06.172851.xlsx",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/arylation_10.1021.acscatal.6b00861-2025-07-29T22:10:23.416882.xlsx",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/arylation_10.1021.acscatal.6b00861-2025-09-02T19:49:58.181611.pbtxt",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/arylation_10.1021.acscatal.6b00861-2025-09-02T19:49:58.181611.xlsx",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/click_coupling_10.1039.D3SC01591B-2025-09-02T19:58:38.938469.pbtxt",
+      "reactions": 80,
+      "types": [
+        "copper-catalysed alkyne\u2013azide click-coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/click_coupling_10.1039.D3SC01591B-2025-09-02T19:58:38.938469.xlsx",
+      "reactions": 80,
+      "types": [
+        "copper-catalysed alkyne\u2013azide click-coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/coupling_10.1039.d4mr00031e-2025-05-12T06:17:39.756239.pbtxt",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/coupling_10.1039.d4mr00031e-2025-05-12T06:17:39.756239.xlsx",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/coupling_10.1039.d4mr00031e-2025-09-02T19:52:40.567831.xlsx",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/coupling_10.1039.d4mr00031e-2025-09-02T19:54:57.548974.pbtxt",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/coupling_10.1039.d4mr00031e-2025-09-02T19:54:57.548974.xlsx",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-05-12T06:15:27.845656.pbtxt",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-05-12T06:15:27.845656.xlsx",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-05-12T06:16:04.965826.pbtxt",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-05-12T06:16:04.965826.xlsx",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-09-02T19:57:39.557209.pbtxt",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/diels_alder_10.1039.c7sc00538e-2025-09-02T19:57:39.557209.xlsx",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-05-12T06:16:59.775137.pbtxt",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-05-12T06:16:59.775137.xlsx",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-09-02T19:50:09.486675.pbtxt",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-09-02T19:50:09.486675.xlsx",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-09-02T19:50:54.893888.pbtxt",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/dimerization_10.1021.acscatal.5b02001-2025-09-02T19:50:54.893888.xlsx",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/halogenation_10.1039.C3GC42104J-2025-05-12T06:17:54.749961.pbtxt",
+      "reactions": 46,
+      "types": [
+        "Halogenation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/halogenation_10.1039.C3GC42104J-2025-05-12T06:17:54.749961.xlsx",
+      "reactions": 46,
+      "types": [
+        "Halogenation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/halogenation_10.1039.C3GC42104J-2025-09-02T19:55:14.474732.xlsx",
+      "reactions": 46,
+      "types": [
+        "Halogenation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/oxidation_10.1016.j.tetlet.2013.02.056-2025-09-02T19:57:02.934750.pbtxt",
+      "reactions": 15,
+      "types": [
+        "Oxidation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/oxidation_10.1016.j.tetlet.2013.02.056-2025-09-02T19:57:02.934750.xlsx",
+      "reactions": 15,
+      "types": [
+        "Oxidation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/pericyclic_10.1055.s-0030-1259030-2025-05-12T06:18:54.042413.pbtxt",
+      "reactions": 39,
+      "types": [
+        "Pericyclic"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/pericyclic_10.1055.s-0030-1259030-2025-05-12T06:18:54.042413.xlsx",
+      "reactions": 39,
+      "types": [
+        "Pericyclic"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/pericyclic_10.1055.s-0030-1259030-2025-09-02T19:57:13.699997.pbtxt",
+      "reactions": 39,
+      "types": [
+        "Pericyclic"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/pericyclic_10.1055.s-0030-1259030-2025-09-02T19:57:13.699997.xlsx",
+      "reactions": 39,
+      "types": [
+        "Pericyclic"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/photomechanical_10.1039.D2FD00122E-2025-05-12T06:16:21.280375.pbtxt",
+      "reactions": 21,
+      "types": [
+        "Photomechanical"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/photomechanical_10.1039.D2FD00122E-2025-05-12T06:16:21.280375.xlsx",
+      "reactions": 21,
+      "types": [
+        "Photomechanical"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/photomechanical_10.1039.D2FD00122E-2025-09-02T19:57:23.838950.pbtxt",
+      "reactions": 21,
+      "types": [
+        "Photomechanical"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/photomechanical_10.1039.D2FD00122E-2025-09-02T19:57:23.838950.xlsx",
+      "reactions": 21,
+      "types": [
+        "Photomechanical"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-05-12T06:15:46.633431.pbtxt",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-05-12T06:15:46.633431.xlsx",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-09-02T19:47:32.211461.pbtxt",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-09-02T19:47:32.211461.xlsx",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-09-02T19:49:08.668253.pbtxt",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/polyaromatic_synthesis_10.1039.c9ra04921e-2025-09-02T19:49:08.668253.xlsx",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/reduction_10.1021.acssuschemeng.3c01544-2025-05-12T06:27:12.712208.xlsx"
+    },
+    {
+      "file": "b3m2a1/sonogashira_10.1039.B915669K-2025-05-12T06:17:10.395994.pbtxt",
+      "reactions": 60,
+      "types": [
+        "Sonogashira"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/sonogashira_10.1039.B915669K-2025-05-12T06:17:10.395994.xlsx",
+      "reactions": 60,
+      "types": [
+        "Sonogashira"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/sonogashira_10.1039.B915669K-2025-09-02T19:52:17.253869.pbtxt",
+      "reactions": 60,
+      "types": [
+        "Sonogashira"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/sonogashira_10.1039.B915669K-2025-09-02T19:52:17.253869.xlsx",
+      "reactions": 60,
+      "types": [
+        "Sonogashira"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/ugi_10.1021.acsomega.0c00369-2025-05-12T06:17:23.321305.pbtxt",
+      "reactions": 19,
+      "types": [
+        "UGI"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/ugi_10.1021.acsomega.0c00369-2025-05-12T06:17:23.321305.xlsx",
+      "reactions": 19,
+      "types": [
+        "UGI"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/ugi_10.1021.acsomega.0c00369-2025-09-02T19:52:31.739126.pbtxt",
+      "reactions": 19,
+      "types": [
+        "UGI"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "b3m2a1/ugi_10.1021.acsomega.0c00369-2025-09-02T19:52:31.739126.xlsx",
+      "reactions": 19,
+      "types": [
+        "UGI"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/PDI_synthesis_10.1002.ange.201913625.xlsx",
+      "reactions": 35,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/arylation_10.1021.acscatal.6b00861.xlsx",
+      "reactions": 56,
+      "types": [
+        "Arylation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/click_coupling_10.1039.D3SC01591B.xlsx",
+      "reactions": 80,
+      "types": [
+        "copper-catalysed alkyne\u2013azide click-coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/coupling_10.1039.d4mr00031e.xlsx",
+      "reactions": 40,
+      "types": [
+        "Copper catalyzed coupling"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/diels_alder_10.1039.c7sc00538e.xlsx",
+      "reactions": 72,
+      "types": [
+        "Diels-Alder"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/dimerization_10.1021.acscatal.5b02001.xlsx",
+      "reactions": 62,
+      "types": [
+        "Dimerization"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/oxidation_10.1016.j.tetlet.2013.02.056.xlsx",
+      "reactions": 15,
+      "types": [
+        "Oxidation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/pericyclic_10.1055.s-0030-1259030.xlsx",
+      "reactions": 39,
+      "types": [
+        "Pericyclic"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/photomechanical_10.1039.D2FD00122E.xlsx",
+      "reactions": 21,
+      "types": [
+        "Photomechanical"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/polyaromatic_synthesis_10.1039.c9ra04921e.xlsx",
+      "reactions": 7,
+      "types": [
+        "Polyaromatic Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/sonogashira_10.1039.B915669K.xlsx",
+      "reactions": 60,
+      "types": [
+        "Sonogashira"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/ugi_10.1021.acsomega.0c00369.xlsx",
+      "reactions": 19,
+      "types": [
+        "UGI"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "completed/~$photomechanical_10.1039.D2FD00122E.xlsx"
+    },
+    {
+      "file": "completed/~$reduction_10.1021.acssuschemeng.3c01544.xlsx"
+    },
+    {
+      "file": "completed/~$sonogashira_10.1039.B915669K.xlsx"
+    },
+    {
+      "file": "incomplete/base_template.xlsx",
+      "reactions": 4,
+      "types": [
+        "Custom Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/co2_fixation_10.1039.D5MR00072F.pbtxt",
+      "reactions": 14,
+      "types": [
+        "Propargyl synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/co2_fixation_10.1039.D5MR00072F.xlsx"
+    },
+    {
+      "file": "incomplete/condensation_16.xlsx",
+      "reactions": 26,
+      "types": [
+        "Condensation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/copper_10.1039.D3SC01591B.xlsx"
+    },
+    {
+      "file": "incomplete/diels_alder_10.1126.science.adf5273.xlsx"
+    },
+    {
+      "file": "incomplete/halogenation_10.1039.C3GC42104J.xlsx",
+      "reactions": 46,
+      "types": [
+        "Halogenation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/heck_10.1002.adsc.201900965.xlsx",
+      "reactions": 72,
+      "types": [
+        "Heck"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/reduction_10.1021.acssuschemeng.3c01544.xlsx",
+      "reactions": 20,
+      "types": [
+        "Reduction of Alkyl & Aryl Halides"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "incomplete/reu/coronel.xlsx"
+    },
+    {
+      "file": "incomplete/reu/danurand.xlsx"
+    },
+    {
+      "file": "incomplete/reu/koschnich.xlsx"
+    },
+    {
+      "file": "incomplete/reu/lankford.xlsx"
+    },
+    {
+      "file": "incomplete/reu/poole.xlsx"
+    },
+    {
+      "file": "incomplete/reu/scally.xlsx"
+    },
+    {
+      "file": "incomplete/reu/wilson.xlsx"
+    },
+    {
+      "file": "incomplete/sonogashira_10.1039.c000674b.xlsx"
+    },
+    {
+      "file": "tests/Crystal_test.pbtxt",
+      "reactions": 4,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/Crystal_test.xlsx",
+      "reactions": 4,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/PAPER1.pbtxt",
+      "reactions": 75,
+      "types": [
+        "mechanochemistry-driven regioselective amination"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/PAPER1.xlsx",
+      "reactions": 75,
+      "types": [
+        "mechanochemistry-driven regioselective amination"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/base_template.pbtxt",
+      "reactions": 4,
+      "types": [
+        "PDI synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/base_template.xlsx",
+      "reactions": 4,
+      "types": [
+        "Custom Synthesis"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/condensation_16.pbtxt",
+      "reactions": 26,
+      "types": [
+        "Condensation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/condensation_16.xlsx",
+      "reactions": 26,
+      "types": [
+        "Condensation"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/url_link_test.pbtxt",
+      "reactions": 1,
+      "types": [
+        "Pressure-Induced Phase Change"
+      ],
+      "mapped": true
+    },
+    {
+      "file": "tests/url_link_test.xlsx",
+      "reactions": 1,
+      "types": [
+        "Pressure-Induced Phase Change"
+      ],
+      "mapped": true
+    }
+  ],
+  "auxiliary_files": [
+    {
+      "file": "aux/.DS_Store",
+      "sha256": "d65165279105ca6773180500688df4bdc69a2c7b771752f0a46ef120b7fd8ec3"
+    },
+    {
+      "file": "aux/ndi2_xas_spectrum.csv",
+      "sha256": "c1eb6f76930a00fa0c9f0c46bc5ed26cd9fa148d7585bc8c28d8ad227c189192"
+    },
+    {
+      "file": "aux/ndi2_eds_spectrum.csv",
+      "sha256": "99ff17b10d6a5eefb29c92ade923f5c103fe6fa6ea51cc69573ef270e5a586e2"
+    }
+  ]
+}

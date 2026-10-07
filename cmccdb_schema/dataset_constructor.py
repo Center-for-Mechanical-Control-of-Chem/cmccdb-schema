@@ -1700,7 +1700,7 @@ class DatasetConstructor:
     false_regex = re.compile(r'FALSE|NO', re.IGNORECASE)
     true_regex = re.compile(r'TRUE|YES', re.IGNORECASE)
     @classmethod
-    def sanitize_csv_data(cls, row, max_row=None):
+    def sanitize_csv_data(cls, row, max_row=None, template=None):
         row = [r.strip() for r in row]
         if max_row is not None and len(row) > max_row:
             trailing_spaces = 0
@@ -1714,13 +1714,33 @@ class DatasetConstructor:
                 if diff < 0: diff = 0
                 trailing_spaces = min(trailing_spaces, diff)
                 row = row[:-trailing_spaces]
+        string_columns = set()
+        if template is not None and template.validator is not None:
+            for column, path in enumerate(template.template_paths):
+                parent = template.validator
+                for key in path[:-1]:
+                    parent = parent[key]
+                key = path[-1]
+                if isinstance(parent, dict) and key == "key":
+                    # The spreadsheet map representation stores a literal key.
+                    value_type = str
+                elif isinstance(parent, ProtoMessage):
+                    value_type = ProtoHandler.get_field_type(parent.type, key).value_type
+                elif isinstance(parent, ProtoContainer):
+                    value_type = (parent.type.value_type if isinstance(key, int) else
+                                  ProtoHandler.get_field_type(parent.type.value_type, key).value_type)
+                else:
+                    value_type = None
+                if value_type is str:
+                    string_columns.add(column)
         return [
+                d if column in string_columns else
                 False if cls.false_regex.fullmatch(d) else
                 True if cls.true_regex.fullmatch(d) else
                 int(d) if cls.int_regex.fullmatch(d) else
                 float(d) if cls.num_regex.fullmatch(d) else
                 d
-                for d in row
+                for column, d in enumerate(row)
             ]
 
     @classmethod
@@ -1752,7 +1772,7 @@ class DatasetConstructor:
                 [value for column, value in enumerate(common[-1])
                  if value or any(column < len(header) and header[column].strip()
                                  for header in common[:-1])],
-                len(templater.template_paths)
+                len(templater.template_paths), template=templater
             )
             base_template = templater.apply(csv_data)
 
@@ -1804,7 +1824,7 @@ class DatasetConstructor:
             for row in data:
                 reaction_num += 1
                 templated_proto = parser.template.apply(
-                    cls.sanitize_csv_data(row, len(parser.template.template_paths))
+                    cls.sanitize_csv_data(row, len(parser.template.template_paths), template=parser.template)
                 )
                 stripped_missings = ProtoTemplater.prep_proto(
                     templated_proto,

@@ -35,6 +35,9 @@ next to this one, since it isn't a dependency of cmccdb-schema itself.
 """
 import csv
 import os
+import json
+import hashlib
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -51,9 +54,9 @@ from cmccdb_schema.proto import reaction_pb2
 # contributor-facing CSV/XLSX submission templates. Tests that touch this
 # corpus skip (rather than fail) when it isn't checked out, since it lives
 # in a separate repository.
-CMCCDB_DATA_ROOT = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "cmccdb-data")
-)
+CMCCDB_DATA_ROOT = os.environ.get("CMCCDB_DATA_ROOT", os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "cmccdb-data")
+))
 
 
 def _pad_rows(rows):
@@ -556,7 +559,7 @@ def _xlsx_files(*subdirs):
                 sorted(
                     os.path.join(directory, name)
                     for name in os.listdir(directory)
-                    if name.endswith(".xlsx")
+                    if name.endswith(".xlsx") and not name.startswith("~$")
                 )
             )
     return paths
@@ -586,10 +589,8 @@ class TestRealWorldTemplates:
     valid submissions; failures there are real regressions. `incomplete/`
     and the contributor scratch folder `b3m2a1/` are known works-in-progress
     (schema drift, typos, missing required fields) and are exercised as
-    soft smoke tests: a clean parse is reported as a pass, and a failure is
-    reported as an expected failure (xfail) rather than a hard failure, so
-    the suite still flags the day one of them starts raising a *new* kind
-    of error while not being fragile to the corpus's ongoing churn.
+    strict negative tests for reviewed invalid input hashes and error reasons;
+    every other input must convert successfully.
     """
 
     @pytest.mark.parametrize("xlsx_path", _xlsx_files("tests", "completed"), ids=os.path.basename)
@@ -607,12 +608,16 @@ class TestRealWorldTemplates:
 
     @pytest.mark.parametrize("xlsx_path", _xlsx_files("incomplete", "b3m2a1"), ids=os.path.basename)
     def test_incomplete_templates_smoke(self, xlsx_path, tmp_path):
-        try:
-            csv_path = _xlsx_to_csv(xlsx_path, tmp_path)
-            dataset = dc.DatasetConstructor.enumerate_spreadsheet(
-                csv_path, name=os.path.basename(xlsx_path)
-            )
-        except Exception as exc:  # noqa: BLE001 - deliberately broad for a smoke test
-            pytest.xfail(f"{os.path.basename(xlsx_path)} does not convert cleanly yet: {exc!r}")
+        manifest = json.loads((Path(__file__).parent / "cmccdb_schema/orm/corpus_manifest.json").read_text())
+        relative = os.path.relpath(xlsx_path, CMCCDB_DATA_ROOT)
+        expected = manifest["invalid"].get(relative)
+        if expected:
+            assert hashlib.sha256(Path(xlsx_path).read_bytes()).hexdigest() == expected["sha256"]
+            with pytest.raises(Exception) as caught:
+                dc.DatasetConstructor.enumerate_spreadsheet(xlsx_path)
+            assert type(caught.value).__name__ == expected["exception"]
+            assert expected["message"] in str(caught.value)
         else:
-            assert len(dataset.reactions) >= 0
+            csv_path = _xlsx_to_csv(xlsx_path, tmp_path)
+            dataset = dc.DatasetConstructor.enumerate_spreadsheet(csv_path, name=os.path.basename(xlsx_path))
+            assert dataset.reactions
