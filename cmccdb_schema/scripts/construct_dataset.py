@@ -49,9 +49,9 @@ def main(kwargs):
 
     logger = get_logger(__name__)
 
-    if len(kwargs.get("--name", "")) == 0:
+    if not kwargs.get("--name"):
         raise ValueError("contributor name is required")
-    if len(kwargs.get("--email", "")) == 0:
+    if not kwargs.get("--email"):
         raise ValueError("contributor email is required")
 
     filename = kwargs["--data"]
@@ -94,6 +94,7 @@ def main(kwargs):
 
     logger.info("writing new Dataset to %s", output)
     message_helpers.write_message(dataset, output)
+    return dataset
 
 
 if __name__ == "__main__":

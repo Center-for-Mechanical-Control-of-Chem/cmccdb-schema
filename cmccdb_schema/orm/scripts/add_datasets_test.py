@@ -24,15 +24,20 @@ from cmccdb_schema.orm.database import prepare_database
 from cmccdb_schema.orm.scripts import add_datasets
 
 
-def test_main():
-    with Postgresql() as postgres:
-        engine = create_engine(postgres.url(), future=True)
-        if not prepare_database(engine):
-            pytest.skip("RDKit cartridge is required")
-        argv = [
+def test_main(database_engine, rdkit_cartridge):
+    if not rdkit_cartridge:
+        pytest.skip("RDKit cartridge is required")
+    argv = [
             "--url",
-            postgres.url(),
+            database_engine.url.render_as_string(hide_password=False),
             "--pattern",
             os.path.join(os.path.dirname(__file__), "..", "testdata", "ord-nielsen-example.pbtxt"),
-        ]
+    ]
+    from cmccdb_schema.orm.database import delete_dataset
+    from sqlalchemy.orm import Session
+    try:
         add_datasets.main(**docopt.docopt(add_datasets.__doc__, argv))
+    finally:
+        with Session(database_engine) as session:
+            delete_dataset('test_dataset', session)
+            session.commit()

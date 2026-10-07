@@ -102,6 +102,9 @@ def build_mappers() -> dict[Type[Message], Type]:
     logger.info("Building ORM mappers")
     mappers = {}
     parents = get_parents(dataset_pb2.Dataset)
+    for message_type, contexts in get_parents(dataset_pb2.DatasetExample).items():
+        existing = parents.setdefault(message_type, [])
+        existing.extend(context for context in contexts if context not in existing)
     for message_type in sorted(parents, key=lambda x: x.DESCRIPTOR.name):
         logger.debug(f"Building mapper for {message_type}")
         mappers[message_type] = build_mapper(message_type, parents=parents)
@@ -149,21 +152,22 @@ def build_mapper(  # pylint: disable=too-many-branches
     if add_key:
         attrs["key"] = Column(Text)  # Map key.
     for field in message_type.DESCRIPTOR.fields:
-        if field.name == "eic_masses":
-            attrs[field.name] = Column(ARRAY(Float))
-        elif field.name == "reaction_ids":
-            attrs[field.name] = Column(ARRAY(Text))
-        elif field.type == FieldDescriptor.TYPE_MESSAGE:
+        if field.type == FieldDescriptor.TYPE_MESSAGE:
             kwargs = {}
             if field.label != FieldDescriptor.LABEL_REPEATED:
                 kwargs["uselist"] = False
             # All relationships are to polymorphic child classes.
             child_class_name = f"_{message_type.DESCRIPTOR.name}{field.name.capitalize()}"
+            if field.label == FieldDescriptor.LABEL_REPEATED:
+                kwargs["order_by"] = f"{child_class_name}.id"
             attrs[field.name] = relationship(child_class_name, back_populates="parent", **kwargs)
         elif field.type == FieldDescriptor.TYPE_ENUM:
             attrs[field.name] = Column(Enum(*field.enum_type.values_by_name.keys(), name=field.enum_type.name))
         else:
-            attrs[field.name] = Column(_FIELD_TYPES[field.type])
+            column_type = _FIELD_TYPES[field.type]
+            if field.label == FieldDescriptor.LABEL_REPEATED:
+                column_type = ARRAY(column_type)
+            attrs[field.name] = Column(column_type)
     if message_type == dataset_pb2.Dataset:
         # Make dataset IDs globally unique.
         attrs["dataset_id"] = Column(Text, nullable=False, unique=True)
@@ -263,6 +267,8 @@ def from_proto(  # pylint: disable=too-many-branches
                 kwargs[field.name] = from_proto(value, mapper=field_mapper)
         elif field.type == FieldDescriptor.TYPE_ENUM:
             kwargs[field.name] = field.enum_type.values_by_number[value].name
+        elif field.label == FieldDescriptor.LABEL_REPEATED:
+            kwargs[field.name] = list(value)
         else:
             kwargs[field.name] = value
     if isinstance(message, dataset_pb2.Dataset):

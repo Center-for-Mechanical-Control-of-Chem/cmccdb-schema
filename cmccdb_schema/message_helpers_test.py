@@ -15,6 +15,9 @@
 
 import tempfile
 import time
+import gzip
+import os
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -22,7 +25,7 @@ from google.protobuf import json_format, text_format
 from rdkit import Chem
 
 from cmccdb_schema import message_helpers
-from cmccdb_schema.proto import reaction_pb2, test_pb2
+from cmccdb_schema.proto import dataset_pb2, reaction_pb2, test_pb2
 
 _BENZENE_MOLBLOCK = """241
   -OEChem-07232015262D
@@ -57,6 +60,15 @@ M  END"""
 # pylint: disable=no-self-use
 
 
+@pytest.mark.parametrize('suffix',['.pbtxt','.pbtxt.gz'])
+def test_unicode_pbtxt_roundtrip(tmp_path,suffix):
+    dataset=dataset_pb2.Dataset(name='Development test α')
+    dataset.reactions.add().provenance.record_created.person.name='Curator José β'
+    path=str(tmp_path/('unicode'+suffix))
+    message_helpers.write_message(dataset,path)
+    assert message_helpers.load_message(path,dataset_pb2.Dataset)==dataset
+
+
 class TestMessageHelpers:
     @pytest.mark.parametrize(
         "filename,expected",
@@ -69,6 +81,10 @@ class TestMessageHelpers:
     )
     def test_id_filename(self, filename, expected):
         assert message_helpers.id_filename(filename) == expected
+
+    def test_cmccdb_id_filename(self):
+        name = 'cmcc_dataset-' + 'ab' * 16 + '.pb.gz'
+        assert message_helpers.id_filename(name) == os.path.join('data', 'ab', name)
 
     @pytest.mark.parametrize(
         "value,identifier_type,expected",
@@ -196,8 +212,16 @@ class TestMessageHelpers:
     def test_parse_doi(self, doi, expected):
         assert message_helpers.parse_doi(doi) == expected
 
-    def test_fetch_dataset(self):
+    def test_fetch_dataset(self, monkeypatch):
+        expected = dataset_pb2.Dataset(dataset_id='ord_dataset-35a5a513f1dd44a3a97c88da99f81a00')
+        expected.reactions.extend(reaction_pb2.Reaction() for _ in range(7))
+        def get(url, timeout):
+            assert url.endswith('/data/35/ord_dataset-35a5a513f1dd44a3a97c88da99f81a00.pb.gz')
+            assert timeout == 10.0
+            return SimpleNamespace(status_code=200, content=gzip.compress(expected.SerializeToString()))
+        monkeypatch.setattr(message_helpers.requests, 'get', get)
         dataset = message_helpers.fetch_dataset("ord_dataset-35a5a513f1dd44a3a97c88da99f81a00")
+        assert dataset == expected
         assert len(dataset.reactions) == 7
 
 
@@ -408,7 +432,13 @@ class TestSetDativeBonds:
     def test_set_dative_bonds(self, smiles, from_atoms, expected):
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
         dative_mol = message_helpers.set_dative_bonds(mol, from_atoms=from_atoms)
-        assert Chem.MolToSmiles(dative_mol) == expected
+        # RDKit releases differ in how implicit hydrogens are printed.
+        expected_mol = Chem.MolFromSmiles(expected, sanitize=False)
+        assert dative_mol.GetNumAtoms() == expected_mol.GetNumAtoms()
+        assert dative_mol.GetNumBonds() == expected_mol.GetNumBonds()
+        assert dative_mol.HasSubstructMatch(expected_mol)
+        assert expected_mol.HasSubstructMatch(dative_mol)
+        assert sum(b.GetBondType() == Chem.BondType.DATIVE for b in dative_mol.GetBonds()) == 2
 
 
 class TestLoadAndWriteMessage:

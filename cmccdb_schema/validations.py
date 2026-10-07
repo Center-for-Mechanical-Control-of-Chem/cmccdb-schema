@@ -1079,6 +1079,11 @@ def validate_length(message: reaction_pb2.Length):
     ensure_float_nonnegative(message, "precision")
 
 
+def validate_angle(message: reaction_pb2.Angle):
+    check_value_and_units(message)
+    ensure_float_nonnegative(message, "precision")
+
+
 def validate_wavelength(message: reaction_pb2.Wavelength):
     check_value_and_units(message)
     ensure_float_nonnegative(message, "value")
@@ -1213,6 +1218,7 @@ _VALIDATOR_SWITCH = {
     reaction_pb2.Current: validate_current,
     reaction_pb2.Voltage: validate_voltage,
     reaction_pb2.Length: validate_length,
+    reaction_pb2.Angle: validate_angle,
     reaction_pb2.Wavelength: validate_wavelength,
     reaction_pb2.Frequency: validate_frequency,
     reaction_pb2.Force: validate_force,

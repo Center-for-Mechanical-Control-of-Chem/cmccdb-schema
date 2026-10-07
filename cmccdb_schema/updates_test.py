@@ -29,7 +29,7 @@ class TestUpdateReaction:
     def test_with_no_updates(self):
         message = reaction_pb2.Reaction()
         message.provenance.record_created.time.value = "2020-05-08"
-        message.reaction_id = "ord-c0bbd41f095a44a78b6221135961d809"
+        message.reaction_id = "cmcc-c0bbd41f095a44a78b6221135961d809"
         copied = reaction_pb2.Reaction()
         copied.CopyFrom(message)
         updates.update_reaction(copied)
@@ -43,10 +43,10 @@ class TestUpdateReaction:
 
     def test_keep_existing_reaction_id(self):
         message = reaction_pb2.Reaction()
-        message.reaction_id = "ord-c0bbd41f095a44a78b6221135961d809"
+        message.reaction_id = "cmcc-c0bbd41f095a44a78b6221135961d809"
         message.provenance.record_created.time.value = "2020-01-01"
         updates.update_reaction(message)
-        assert message.reaction_id == "ord-c0bbd41f095a44a78b6221135961d809"
+        assert message.reaction_id == "cmcc-c0bbd41f095a44a78b6221135961d809"
         assert len(message.provenance.record_modified) == 0
 
 
@@ -86,15 +86,15 @@ class TestUpdateDataset:
 
     def test_crossferences_are_proper_ids(self, dataset):
         dummy_input = dataset.reactions[0].inputs["dummy_input"]
-        dummy_input.crude_components.add(reaction_id="ord-c0bbd41f095a44a78b6221135961d809", has_derived_amount=True)
-        dataset.reactions[1].reaction_id = "ord-c0bbd41f095a44a78b6221135961d809"
+        dummy_input.crude_components.add(reaction_id="cmcc-c0bbd41f095a44a78b6221135961d809", has_derived_amount=True)
+        dataset.reactions[1].reaction_id = "cmcc-c0bbd41f095a44a78b6221135961d809"
         dummy_input.components[0].preparations.add(
-            type="SYNTHESIZED", reaction_id="ord-d0bbd41f095a44a78b6221135961d809"
+            type="SYNTHESIZED", reaction_id="cmcc-d0bbd41f095a44a78b6221135961d809"
         )
-        dataset.reactions[2].reaction_id = "ord-d0bbd41f095a44a78b6221135961d809"
+        dataset.reactions[2].reaction_id = "cmcc-d0bbd41f095a44a78b6221135961d809"
         # Check updated values.
         updates.update_dataset(dataset)
         assert dummy_input.crude_components[0].reaction_id == dataset.reactions[1].reaction_id
-        assert dummy_input.crude_components[0].reaction_id == "ord-c0bbd41f095a44a78b6221135961d809"
+        assert dummy_input.crude_components[0].reaction_id == "cmcc-c0bbd41f095a44a78b6221135961d809"
         assert dummy_input.components[0].preparations[0].reaction_id == dataset.reactions[2].reaction_id
-        assert dummy_input.components[0].preparations[0].reaction_id == "ord-d0bbd41f095a44a78b6221135961d809"
+        assert dummy_input.components[0].preparations[0].reaction_id == "cmcc-d0bbd41f095a44a78b6221135961d809"

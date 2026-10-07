@@ -1,10 +1,2 @@
-
-import enum
-
-class _runtime_version:
-    class Domain(enum.Enum):
-        PUBLIC = "public"
-
-    @classmethod
-    def ValidateProtobufRuntimeVersion(self, *version_info):
-        ...
+"""Compatibility import for older callers; retain real Protobuf validation."""
+from google.protobuf import runtime_version as _runtime_version

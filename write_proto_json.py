@@ -14,7 +14,10 @@ def build_proto_tree(root):
         oneofs = ProtoHandler.oneof_iter(root)
         if len(oneofs) == 1 and oneofs[0].__name__ == "kind":
             return {
-                camelCase(oneofs[0].__name__) + "Case":build_proto_tree(oneofs[0])
+                camelCase(oneofs[0].__name__) + "Case":build_proto_tree(oneofs[0]),
+                **{camelCase(p.name): build_proto_tree(p.type)
+                   for p in ProtoHandler.field_iter(root)
+                   if p.name not in {f.name for f in ProtoHandler.field_iter(oneofs[0])}}
             }
         else:
             if isinstance(root, ProtoType):
