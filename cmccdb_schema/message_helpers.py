@@ -740,9 +740,8 @@ def fetch_dataset(dataset_id: str, timeout: float = 10.0) -> dataset_pb2.Dataset
         RuntimeError: If the request fails.
         ValueError: If the dataset ID is invalid.
     """
-    from cmccdb_schema import validations  # Avoid circular import; pylint: disable=import-outside-toplevel.
-
-    if not validations.is_valid_dataset_id(dataset_id):
+    # This helper fetches ORD's public corpus; CMCCDB IDs have a separate namespace.
+    if not re.fullmatch(r'ord_dataset-[0-9a-f]{32}', dataset_id):
         raise ValueError(f"Invalid dataset ID: {dataset_id}")
     url = urllib.parse.urljoin(ORD_DATA_URL, id_filename(f"{dataset_id}.pb.gz"))
     response = requests.get(url, timeout=timeout)
@@ -819,7 +818,7 @@ def write_message(message: cmccdb_schema.Message, filename: str):
         if output_format == MessageFormat.JSON:
             f.write(json_format.MessageToJson(message).encode())
         elif output_format == MessageFormat.PBTXT:
-            f.write(text_format.MessageToBytes(message))
+            f.write(text_format.MessageToString(message, as_utf8=True).encode('utf-8'))
         elif output_format == MessageFormat.BINARY:
             f.write(message.SerializeToString(deterministic=True))
 
@@ -834,9 +833,9 @@ def id_filename(filename: str) -> str:
         Text filename relative to the root of the repository.
     """
     basename = os.path.basename(filename)
-    prefix, suffix = basename.split("-")
-    if not prefix.startswith("ord"):
-        raise ValueError('basename does not have the required "ord" prefix: {basename}')
+    prefix, separator, suffix = basename.partition("-")
+    if not separator or not suffix or prefix not in {"cmcc", "cmcc_dataset", "ord", "ord_dataset", "ord_data"}:
+        raise ValueError(f'basename must have a CMCCDB or ORD ID prefix: {basename}')
     return security.safe_join("data", suffix[:2], basename)
 
 

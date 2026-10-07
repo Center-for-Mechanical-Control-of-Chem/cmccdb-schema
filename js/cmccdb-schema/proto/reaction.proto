@@ -786,6 +786,8 @@ message MechanochemistryConditions {
   }
   MechanochemistryType type = 1;
   string details = 2;
+  // Oscillation frequency; for TWIN_SCREW this is the extruder screw speed.
+  // Use Frequency.RPM for revolutions per minute (60 RPM = 1 Hz).
   optional Frequency frequency = 3;
   optional Force force = 4;
   optional Time duration = 5;
@@ -799,6 +801,11 @@ message MechanochemistryConditions {
   repeated string geometry = 13; //  EXPERIMENTAL: to support twin screw segment geometries
   optional Length contact_size = 14;
   optional string model_name = 15;
+  // Retained for historical CMCCDB templates and datasets.
+  optional bool liquid_assisted = 16;
+  // Volumetric reagent feed rate, independent of screw rotation speed.
+  // A cubic centimetre per minute is exactly a millilitre per minute.
+  optional FlowRate feed_rate = 17;
 }
 
 message FlowConditions {

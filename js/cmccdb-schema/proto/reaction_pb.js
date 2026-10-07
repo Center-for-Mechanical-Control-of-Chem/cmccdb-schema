@@ -2280,7 +2280,7 @@ proto.cmccdb.ReactionIdentifier.toObject = function(includeInstance, msg) {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
     details: jspb.Message.getFieldWithDefault(msg, 2, ""),
     value: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    isMapped: jspb.Message.getBooleanFieldWithDefault(msg, 4, false)
+    isMapped: msg.hasIsMapped() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined
   };
 
   if (includeInstance) {
@@ -3510,7 +3510,7 @@ proto.cmccdb.Amount.toObject = function(includeInstance, msg) {
     moles: (f = msg.getMoles()) && proto.cmccdb.Moles.toObject(includeInstance, f),
     volume: (f = msg.getVolume()) && proto.cmccdb.Volume.toObject(includeInstance, f),
     unmeasured: (f = msg.getUnmeasured()) && proto.cmccdb.UnmeasuredAmount.toObject(includeInstance, f),
-    volumeIncludesSolutes: jspb.Message.getBooleanFieldWithDefault(msg, 4, false)
+    volumeIncludesSolutes: msg.hasVolumeIncludesSolutes() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined
   };
 
   if (includeInstance) {
@@ -4208,8 +4208,8 @@ proto.cmccdb.CrudeComponent.prototype.toObject = function(opt_includeInstance) {
 proto.cmccdb.CrudeComponent.toObject = function(includeInstance, msg) {
   var f, obj = {
     reactionId: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    includesWorkup: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
-    hasDerivedAmount: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+    includesWorkup: msg.hasIncludesWorkup() ? jspb.Message.getBooleanFieldWithDefault(msg, 2, false) : undefined,
+    hasDerivedAmount: msg.hasHasDerivedAmount() ? jspb.Message.getBooleanFieldWithDefault(msg, 3, false) : undefined,
     amount: (f = msg.getAmount()) && proto.cmccdb.Amount.toObject(includeInstance, f),
     texture: (f = msg.getTexture()) && proto.cmccdb.Texture.toObject(includeInstance, f)
   };
@@ -4546,7 +4546,7 @@ proto.cmccdb.Compound.toObject = function(includeInstance, msg) {
     proto.cmccdb.CompoundIdentifier.toObject, includeInstance),
     amount: (f = msg.getAmount()) && proto.cmccdb.Amount.toObject(includeInstance, f),
     reactionRole: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    isLimiting: jspb.Message.getBooleanFieldWithDefault(msg, 4, false),
+    isLimiting: msg.hasIsLimiting() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined,
     preparationsList: jspb.Message.toObjectList(msg.getPreparationsList(),
     proto.cmccdb.CompoundPreparation.toObject, includeInstance),
     source: (f = msg.getSource()) && proto.cmccdb.Compound.Source.toObject(includeInstance, f),
@@ -5296,7 +5296,7 @@ proto.cmccdb.CrystalParameters.toObject = function(includeInstance, msg) {
     alpha: (f = msg.getAlpha()) && proto.cmccdb.Angle.toObject(includeInstance, f),
     beta: (f = msg.getBeta()) && proto.cmccdb.Angle.toObject(includeInstance, f),
     gamma: (f = msg.getGamma()) && proto.cmccdb.Angle.toObject(includeInstance, f),
-    details: jspb.Message.getFieldWithDefault(msg, 9, "")
+    details: msg.hasDetails() ? jspb.Message.getFieldWithDefault(msg, 9, "") : undefined
   };
 
   if (includeInstance) {
@@ -5840,7 +5840,7 @@ proto.cmccdb.CrystalStructureDatabaseIdentifier.toObject = function(includeInsta
   var f, obj = {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
     value: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    details: jspb.Message.getFieldWithDefault(msg, 3, "")
+    details: msg.hasDetails() ? jspb.Message.getFieldWithDefault(msg, 3, "") : undefined
   };
 
   if (includeInstance) {
@@ -7637,7 +7637,7 @@ proto.cmccdb.ReactionSetup.prototype.toObject = function(opt_includeInstance) {
 proto.cmccdb.ReactionSetup.toObject = function(includeInstance, msg) {
   var f, obj = {
     vessel: (f = msg.getVessel()) && proto.cmccdb.Vessel.toObject(includeInstance, f),
-    isAutomated: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    isAutomated: msg.hasIsAutomated() ? jspb.Message.getBooleanFieldWithDefault(msg, 2, false) : undefined,
     automationPlatform: jspb.Message.getFieldWithDefault(msg, 3, ""),
     automationCodeMap: (f = msg.getAutomationCodeMap()) ? f.toObject(includeInstance, proto.cmccdb.Data.toObject) : [],
     environment: (f = msg.getEnvironment()) && proto.cmccdb.ReactionSetup.ReactionEnvironment.toObject(includeInstance, f)
@@ -8128,9 +8128,9 @@ proto.cmccdb.ReactionConditions.toObject = function(includeInstance, msg) {
     illumination: (f = msg.getIllumination()) && proto.cmccdb.IlluminationConditions.toObject(includeInstance, f),
     electrochemistry: (f = msg.getElectrochemistry()) && proto.cmccdb.ElectrochemistryConditions.toObject(includeInstance, f),
     flow: (f = msg.getFlow()) && proto.cmccdb.FlowConditions.toObject(includeInstance, f),
-    reflux: jspb.Message.getBooleanFieldWithDefault(msg, 7, false),
-    ph: jspb.Message.getFloatingPointFieldWithDefault(msg, 8, 0.0),
-    conditionsAreDynamic: jspb.Message.getBooleanFieldWithDefault(msg, 10, false),
+    reflux: msg.hasReflux() ? jspb.Message.getBooleanFieldWithDefault(msg, 7, false) : undefined,
+    ph: msg.hasPh() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 8, 0.0) : undefined,
+    conditionsAreDynamic: msg.hasConditionsAreDynamic() ? jspb.Message.getBooleanFieldWithDefault(msg, 10, false) : undefined,
     details: jspb.Message.getFieldWithDefault(msg, 11, ""),
     mechanochemistry: (f = msg.getMechanochemistry()) && proto.cmccdb.MechanochemistryConditions.toObject(includeInstance, f)
   };
@@ -12063,17 +12063,19 @@ proto.cmccdb.MechanochemistryConditions.toObject = function(includeInstance, msg
     frequency: (f = msg.getFrequency()) && proto.cmccdb.Frequency.toObject(includeInstance, f),
     force: (f = msg.getForce()) && proto.cmccdb.Force.toObject(includeInstance, f),
     duration: (f = msg.getDuration()) && proto.cmccdb.Time.toObject(includeInstance, f),
-    ballMaterial: jspb.Message.getFieldWithDefault(msg, 6, ""),
-    cellMaterial: jspb.Message.getFieldWithDefault(msg, 7, ""),
-    numberOfBalls: jspb.Message.getFieldWithDefault(msg, 8, 0),
+    ballMaterial: msg.hasBallMaterial() ? jspb.Message.getFieldWithDefault(msg, 6, "") : undefined,
+    cellMaterial: msg.hasCellMaterial() ? jspb.Message.getFieldWithDefault(msg, 7, "") : undefined,
+    numberOfBalls: msg.hasNumberOfBalls() ? jspb.Message.getFieldWithDefault(msg, 8, 0) : undefined,
     ballRadius: (f = msg.getBallRadius()) && proto.cmccdb.Length.toObject(includeInstance, f),
-    capMaterial: jspb.Message.getFieldWithDefault(msg, 10, ""),
+    capMaterial: msg.hasCapMaterial() ? jspb.Message.getFieldWithDefault(msg, 10, "") : undefined,
     gForce: (f = msg.getGForce()) && proto.cmccdb.GravitationalAcceleration.toObject(includeInstance, f),
     dimensionList: jspb.Message.toObjectList(msg.getDimensionList(),
     proto.cmccdb.Length.toObject, includeInstance),
     geometryList: (f = jspb.Message.getRepeatedField(msg, 13)) == null ? undefined : f,
     contactSize: (f = msg.getContactSize()) && proto.cmccdb.Length.toObject(includeInstance, f),
-    modelName: jspb.Message.getFieldWithDefault(msg, 15, "")
+    modelName: msg.hasModelName() ? jspb.Message.getFieldWithDefault(msg, 15, "") : undefined,
+    liquidAssisted: msg.hasLiquidAssisted() ? jspb.Message.getBooleanFieldWithDefault(msg, 16, false) : undefined,
+    feedRate: (f = msg.getFeedRate()) && proto.cmccdb.FlowRate.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -12176,6 +12178,15 @@ proto.cmccdb.MechanochemistryConditions.deserializeBinaryFromReader = function(m
     case 15:
       var value = /** @type {string} */ (reader.readString());
       msg.setModelName(value);
+      break;
+    case 16:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setLiquidAssisted(value);
+      break;
+    case 17:
+      var value = new proto.cmccdb.FlowRate;
+      reader.readMessage(value,proto.cmccdb.FlowRate.deserializeBinaryFromReader);
+      msg.setFeedRate(value);
       break;
     default:
       reader.skipField();
@@ -12316,6 +12327,21 @@ proto.cmccdb.MechanochemistryConditions.serializeBinaryToWriter = function(messa
     writer.writeString(
       15,
       f
+    );
+  }
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 16));
+  if (f != null) {
+    writer.writeBool(
+      16,
+      f
+    );
+  }
+  f = message.getFeedRate();
+  if (f != null) {
+    writer.writeMessage(
+      17,
+      f,
+      proto.cmccdb.FlowRate.serializeBinaryToWriter
     );
   }
 };
@@ -12848,6 +12874,79 @@ proto.cmccdb.MechanochemistryConditions.prototype.hasModelName = function() {
 };
 
 
+/**
+ * optional bool liquid_assisted = 16;
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.getLiquidAssisted = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 16, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.setLiquidAssisted = function(value) {
+  return jspb.Message.setField(this, 16, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.clearLiquidAssisted = function() {
+  return jspb.Message.setField(this, 16, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.hasLiquidAssisted = function() {
+  return jspb.Message.getField(this, 16) != null;
+};
+
+
+/**
+ * optional FlowRate feed_rate = 17;
+ * @return {?proto.cmccdb.FlowRate}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.getFeedRate = function() {
+  return /** @type{?proto.cmccdb.FlowRate} */ (
+    jspb.Message.getWrapperField(this, proto.cmccdb.FlowRate, 17));
+};
+
+
+/**
+ * @param {?proto.cmccdb.FlowRate|undefined} value
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+*/
+proto.cmccdb.MechanochemistryConditions.prototype.setFeedRate = function(value) {
+  return jspb.Message.setWrapperField(this, 17, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.cmccdb.MechanochemistryConditions} returns this
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.clearFeedRate = function() {
+  return this.setFeedRate(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.MechanochemistryConditions.prototype.hasFeedRate = function() {
+  return jspb.Message.getField(this, 17) != null;
+};
+
+
 
 
 
@@ -13361,13 +13460,13 @@ proto.cmccdb.ReactionNotes.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.ReactionNotes.toObject = function(includeInstance, msg) {
   var f, obj = {
-    isHeterogeneous: jspb.Message.getBooleanFieldWithDefault(msg, 1, false),
-    formsPrecipitate: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
-    isExothermic: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
-    offgasses: jspb.Message.getBooleanFieldWithDefault(msg, 4, false),
-    isSensitiveToMoisture: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
-    isSensitiveToOxygen: jspb.Message.getBooleanFieldWithDefault(msg, 6, false),
-    isSensitiveToLight: jspb.Message.getBooleanFieldWithDefault(msg, 7, false),
+    isHeterogeneous: msg.hasIsHeterogeneous() ? jspb.Message.getBooleanFieldWithDefault(msg, 1, false) : undefined,
+    formsPrecipitate: msg.hasFormsPrecipitate() ? jspb.Message.getBooleanFieldWithDefault(msg, 2, false) : undefined,
+    isExothermic: msg.hasIsExothermic() ? jspb.Message.getBooleanFieldWithDefault(msg, 3, false) : undefined,
+    offgasses: msg.hasOffgasses() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined,
+    isSensitiveToMoisture: msg.hasIsSensitiveToMoisture() ? jspb.Message.getBooleanFieldWithDefault(msg, 5, false) : undefined,
+    isSensitiveToOxygen: msg.hasIsSensitiveToOxygen() ? jspb.Message.getBooleanFieldWithDefault(msg, 6, false) : undefined,
+    isSensitiveToLight: msg.hasIsSensitiveToLight() ? jspb.Message.getBooleanFieldWithDefault(msg, 7, false) : undefined,
     safetyNotes: jspb.Message.getFieldWithDefault(msg, 8, ""),
     procedureDetails: jspb.Message.getFieldWithDefault(msg, 9, "")
   };
@@ -14097,8 +14196,8 @@ proto.cmccdb.ReactionWorkup.toObject = function(includeInstance, msg) {
     temperature: (f = msg.getTemperature()) && proto.cmccdb.TemperatureConditions.toObject(includeInstance, f),
     keepPhase: jspb.Message.getFieldWithDefault(msg, 7, ""),
     stirring: (f = msg.getStirring()) && proto.cmccdb.StirringConditions.toObject(includeInstance, f),
-    targetPh: jspb.Message.getFloatingPointFieldWithDefault(msg, 9, 0.0),
-    isAutomated: jspb.Message.getBooleanFieldWithDefault(msg, 10, false)
+    targetPh: msg.hasTargetPh() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 9, 0.0) : undefined,
+    isAutomated: msg.hasIsAutomated() ? jspb.Message.getBooleanFieldWithDefault(msg, 10, false) : undefined
   };
 
   if (includeInstance) {
@@ -14960,7 +15059,7 @@ proto.cmccdb.ProductCompound.toObject = function(includeInstance, msg) {
   var f, obj = {
     identifiersList: jspb.Message.toObjectList(msg.getIdentifiersList(),
     proto.cmccdb.CompoundIdentifier.toObject, includeInstance),
-    isDesiredProduct: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    isDesiredProduct: msg.hasIsDesiredProduct() ? jspb.Message.getBooleanFieldWithDefault(msg, 2, false) : undefined,
     measurementsList: jspb.Message.toObjectList(msg.getMeasurementsList(),
     proto.cmccdb.ProductMeasurement.toObject, includeInstance),
     isolatedColor: jspb.Message.getFieldWithDefault(msg, 4, ""),
@@ -15388,13 +15487,13 @@ proto.cmccdb.ProductMeasurement.toObject = function(includeInstance, msg) {
     analysisKey: jspb.Message.getFieldWithDefault(msg, 1, ""),
     type: jspb.Message.getFieldWithDefault(msg, 2, 0),
     details: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    usesInternalStandard: jspb.Message.getBooleanFieldWithDefault(msg, 4, false),
-    isNormalized: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
-    usesAuthenticStandard: jspb.Message.getBooleanFieldWithDefault(msg, 6, false),
+    usesInternalStandard: msg.hasUsesInternalStandard() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined,
+    isNormalized: msg.hasIsNormalized() ? jspb.Message.getBooleanFieldWithDefault(msg, 5, false) : undefined,
+    usesAuthenticStandard: msg.hasUsesAuthenticStandard() ? jspb.Message.getBooleanFieldWithDefault(msg, 6, false) : undefined,
     authenticStandard: (f = msg.getAuthenticStandard()) && proto.cmccdb.Compound.toObject(includeInstance, f),
     percentage: (f = msg.getPercentage()) && proto.cmccdb.Percentage.toObject(includeInstance, f),
     floatValue: (f = msg.getFloatValue()) && proto.cmccdb.FloatValue.toObject(includeInstance, f),
-    stringValue: jspb.Message.getFieldWithDefault(msg, 10, ""),
+    stringValue: msg.hasStringValue() ? jspb.Message.getFieldWithDefault(msg, 10, "") : undefined,
     amount: (f = msg.getAmount()) && proto.cmccdb.Amount.toObject(includeInstance, f),
     retentionTime: (f = msg.getRetentionTime()) && proto.cmccdb.Time.toObject(includeInstance, f),
     massSpecDetails: (f = msg.getMassSpecDetails()) && proto.cmccdb.ProductMeasurement.MassSpecMeasurementDetails.toObject(includeInstance, f),
@@ -15706,8 +15805,8 @@ proto.cmccdb.ProductMeasurement.MassSpecMeasurementDetails.toObject = function(i
   var f, obj = {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
     details: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    ticMinimumMz: jspb.Message.getFloatingPointFieldWithDefault(msg, 3, 0.0),
-    ticMaximumMz: jspb.Message.getFloatingPointFieldWithDefault(msg, 4, 0.0),
+    ticMinimumMz: msg.hasTicMinimumMz() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 3, 0.0) : undefined,
+    ticMaximumMz: msg.hasTicMaximumMz() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 4, 0.0) : undefined,
     eicMassesList: (f = jspb.Message.getRepeatedFloatingPointField(msg, 5)) == null ? undefined : f
   };
 
@@ -16823,7 +16922,7 @@ proto.cmccdb.Analysis.toObject = function(includeInstance, msg) {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
     details: jspb.Message.getFieldWithDefault(msg, 2, ""),
     chmoId: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    isOfIsolatedSpecies: jspb.Message.getBooleanFieldWithDefault(msg, 4, false),
+    isOfIsolatedSpecies: msg.hasIsOfIsolatedSpecies() ? jspb.Message.getBooleanFieldWithDefault(msg, 4, false) : undefined,
     dataMap: (f = msg.getDataMap()) ? f.toObject(includeInstance, proto.cmccdb.Data.toObject) : [],
     instrumentManufacturer: jspb.Message.getFieldWithDefault(msg, 6, ""),
     instrumentLastCalibrated: (f = msg.getInstrumentLastCalibrated()) && proto.cmccdb.DateTime.toObject(includeInstance, f)
@@ -17224,7 +17323,7 @@ proto.cmccdb.ReactionProvenance.toObject = function(includeInstance, msg) {
     recordModifiedList: jspb.Message.toObjectList(msg.getRecordModifiedList(),
     proto.cmccdb.RecordEvent.toObject, includeInstance),
     reactionMetadataMap: (f = msg.getReactionMetadataMap()) ? f.toObject(includeInstance, proto.cmccdb.Data.toObject) : [],
-    isMined: jspb.Message.getBooleanFieldWithDefault(msg, 10, false)
+    isMined: msg.hasIsMined() ? jspb.Message.getBooleanFieldWithDefault(msg, 10, false) : undefined
   };
 
   if (includeInstance) {
@@ -18204,8 +18303,8 @@ proto.cmccdb.Time.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Time.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -18441,8 +18540,8 @@ proto.cmccdb.Force.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Force.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -18676,8 +18775,8 @@ proto.cmccdb.Frequency.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Frequency.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -18911,8 +19010,8 @@ proto.cmccdb.GravitationalAcceleration.prototype.toObject = function(opt_include
  */
 proto.cmccdb.GravitationalAcceleration.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -19145,8 +19244,8 @@ proto.cmccdb.Mass.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Mass.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -19382,8 +19481,8 @@ proto.cmccdb.Moles.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Moles.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -19619,8 +19718,8 @@ proto.cmccdb.Volume.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Volume.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -19856,8 +19955,8 @@ proto.cmccdb.Concentration.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Concentration.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -20092,8 +20191,8 @@ proto.cmccdb.Pressure.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Pressure.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -20333,8 +20432,8 @@ proto.cmccdb.Temperature.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Temperature.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -20569,8 +20668,8 @@ proto.cmccdb.Current.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Current.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -20804,8 +20903,8 @@ proto.cmccdb.Voltage.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Voltage.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -21039,8 +21138,8 @@ proto.cmccdb.Length.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Length.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -21277,8 +21376,8 @@ proto.cmccdb.Angle.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Angle.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -21512,8 +21611,8 @@ proto.cmccdb.Wavelength.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Wavelength.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -21747,8 +21846,8 @@ proto.cmccdb.FlowRate.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.FlowRate.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -21985,8 +22084,8 @@ proto.cmccdb.FeedingRate.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.FeedingRate.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined,
     units: jspb.Message.getFieldWithDefault(msg, 3, 0)
   };
 
@@ -22221,8 +22320,8 @@ proto.cmccdb.Percentage.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Percentage.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0)
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined
   };
 
   if (includeInstance) {
@@ -22417,8 +22516,8 @@ proto.cmccdb.FloatValue.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.FloatValue.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    precision: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0)
+    value: msg.hasValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    precision: msg.hasPrecision() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0) : undefined
   };
 
   if (includeInstance) {
@@ -22642,11 +22741,11 @@ proto.cmccdb.Data.prototype.toObject = function(opt_includeInstance) {
  */
 proto.cmccdb.Data.toObject = function(includeInstance, msg) {
   var f, obj = {
-    floatValue: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    integerValue: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    bytesValue: msg.getBytesValue_asB64(),
-    stringValue: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    url: jspb.Message.getFieldWithDefault(msg, 5, ""),
+    floatValue: msg.hasFloatValue() ? jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0) : undefined,
+    integerValue: msg.hasIntegerValue() ? jspb.Message.getFieldWithDefault(msg, 2, 0) : undefined,
+    bytesValue: msg.hasBytesValue() ? msg.getBytesValue_asB64() : undefined,
+    stringValue: msg.hasStringValue() ? jspb.Message.getFieldWithDefault(msg, 4, "") : undefined,
+    url: msg.hasUrl() ? jspb.Message.getFieldWithDefault(msg, 5, "") : undefined,
     description: jspb.Message.getFieldWithDefault(msg, 6, ""),
     format: jspb.Message.getFieldWithDefault(msg, 7, "")
   };

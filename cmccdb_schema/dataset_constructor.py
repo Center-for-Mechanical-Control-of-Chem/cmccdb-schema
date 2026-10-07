@@ -36,12 +36,18 @@ update_aliases()
 
 
 def normalize_key(k):
+    k = re.sub(r"\[([^\]]+)\]", r"(\1)", k)
     k_bits = k.split("(", 1)
     if len(k_bits) == 2:
         k, units = k_bits
     else:
         units = None
     k = k.strip().replace(" ", "_").lower()
+    k = {
+        "screw_speed": "frequency",
+        "extruder_screw_speed": "frequency",
+        "extruder_feed_rate": "feed_rate",
+    }.get(k, k)
     if units is not None:
         units = units.replace(")", "").strip()
         units = unit_aliases.get(units, units).replace(" ", "_").lower()
@@ -93,6 +99,7 @@ class ProtoMessage:
         if default_constructable is None:
             default_constructable = self.default_constructable
         self.type = proto_type
+        self.explicit_repeated_headers = set()
         self.fields = (
             data
                 if data is not None else
@@ -145,7 +152,7 @@ class ProtoMessage:
             subtype = None
             for tt, name in kmap.items():
                 if name == field_name:
-                    subtype = tt
+                    subtype = ProtoType(None, tt, None)
                     break
             else:
                 raise ValueError("???")
@@ -155,7 +162,7 @@ class ProtoMessage:
                 raise ValueError("bad field '{}' for type {} (allowed fields are {})".format(field_name, self.type, field_names))
 
             subtype = ProtoHandler.get_field_type(self.type, field_name)
-        if field_name not in self.fields:
+        if field_name not in self.fields or isinstance(self.fields[field_name], ProtoType):
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
     def insert_field(self, field_name, data=None, optional=False):
@@ -174,6 +181,13 @@ class ProtoMessage:
                 msg = msg[key_path[0]]
                 for m in key_path[1:]:
                     msg = msg[m]
+            if (len(key_path) == 1 and fields is None and field_name == key_path[0]
+                    and isinstance(msg, ProtoContainer)
+                    and msg.type.container_type is not None
+                    and ProtoHandler.is_message_type(msg.type.value_type)):
+                if field_name in self.explicit_repeated_headers:
+                    msg.add_message(ProtoMessage(msg.type.value_type))
+                self.explicit_repeated_headers.add(field_name)
             if fields is not None:
                 if units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(fields, units)
@@ -209,6 +223,9 @@ class ProtoMessage:
             return False
         key, rest = key_path[0], key_path[1:]
         if key not in self.fields:
+            return False
+        if isinstance(self.fields[key], ProtoType):
+            # A default scalar placeholder has not been explicitly supplied yet.
             return False
         else:
             subtype = self.fields[key]
@@ -258,7 +275,7 @@ class ProtoMessage:
             return None
     value_data_types = {'Data'}
     def to_template(self, key_name=None):
-        if self.type_name in self.value_data_types:
+        if self.type_name in self.value_data_types and not self.fields:
             return Placeholders.TemplateParameter
         else:
             return {
@@ -381,6 +398,18 @@ class ProtoContainer:
                     msg = msg[key_path[0]]
                     for m in key_path[1:]:
                         msg = msg[m]
+                if (isinstance(msg, ProtoContainer) and msg.type.container_type is not None
+                        and ProtoHandler.is_value_type(msg.type.value_type)):
+                    msg.add_message(ProtoMessage(msg.type.value_type))
+                elif (len(key_path) == 1 and fields is None and field_name == key_path[0]
+                      and isinstance(msg, ProtoContainer)
+                      and msg.type.container_type is not None
+                      and ProtoHandler.is_message_type(msg.type.value_type)):
+                    # Each explicit repeated-message header starts a new element,
+                    # even when its first child is itself a repeated field.
+                    if field_name in root.explicit_repeated_headers:
+                        msg.add_message(ProtoMessage(msg.type.value_type))
+                    root.explicit_repeated_headers.add(field_name)
                 if isinstance(msg.type, ProtoType) and msg.type.container_type is not None:
                     _ = msg.get_default_message()
                 if fields is not None:
@@ -466,6 +495,8 @@ class ProtoContainer:
                 for i,(k, v) in enumerate(zip(self.keys, self.values))
             ]
         elif self.type.container_type is not None:
+            if ProtoHandler.is_value_type(self.type.value_type):
+                return [Placeholders.TemplateParameter for _ in self.values]
             return [v.to_template() for v in self.values]
         else:
             if ProtoHandler.is_value_type(self.type.value_type):
@@ -538,6 +569,8 @@ class ProtoTemplater:
     def validate_value(self, validator, key, value):
         valid = True
         if key == "type":
+            if isinstance(value, int) and not isinstance(value, bool):
+                return valid, value
             if value.lower() in {"", "n/a", "unspecified"}:
                 value = "UNSPECIFIED"
             else:
@@ -552,7 +585,7 @@ class ProtoTemplater:
                     validator_type.value_type,
                     {}
                 )
-                value = enum_types.get(value, value)
+                value = enum_types.get(value, value.upper())
         elif isinstance(value, str) and value == "":
             valid = False
         return valid, value
@@ -662,10 +695,27 @@ class ProtoTemplater:
         return copy_tree
 
     @classmethod
-    def prep_proto(cls, proto, dataset_id=None):
+    def prep_proto(cls, proto, dataset_id=None, descriptor=None):
+        if descriptor and descriptor.full_name == 'cmccdb.Data' and not isinstance(proto, dict):
+            if proto is Placeholders.InvalidParameterPlaceholder:
+                return proto
+            if isinstance(proto, bytes):
+                return {'bytes_value': base64.b64encode(proto).decode(), 'format': 'bin'}
+            if isinstance(proto, bool):
+                raise ValueError('Data has no boolean kind; use an integer or string')
+            if isinstance(proto, int):
+                return {'integer_value': proto}
+            if isinstance(proto, float):
+                return {'float_value': proto}
+            if isinstance(proto, str) and not proto.startswith('url('):
+                return {'string_value': proto}
         if isinstance(proto, dict):
             new = {}
             for k,v in proto.items():
+                field = descriptor.fields_by_name.get(k) if descriptor else None
+                child_descriptor = field.message_type if field and field.message_type else (None if descriptor is None else False)
+                if child_descriptor and child_descriptor.GetOptions().map_entry:
+                    child_descriptor = child_descriptor.fields_by_name['value'].message_type
                 if v is not Placeholders.InvalidParameterPlaceholder:
                     if isinstance(v, list) and all(
                         isinstance(vv, dict) and list(sorted(vv.keys())) == ["key", "value"]
@@ -675,13 +725,13 @@ class ProtoTemplater:
                         for vv in v:
                             if vv["key"] is Placeholders.InvalidParameterPlaceholder: continue
                             if vv["value"] is Placeholders.InvalidParameterPlaceholder: continue
-                            prepped = cls.prep_proto(vv["value"], dataset_id=dataset_id)
+                            prepped = cls.prep_proto(vv["value"], dataset_id=dataset_id, descriptor=child_descriptor)
                             if prepped is Placeholders.InvalidParameterPlaceholder: continue
                             subv[vv["key"]] = prepped
                         if len(subv) > 0:
                             new[k] = subv
                     else:
-                        prepped = cls.prep_proto(v, dataset_id=dataset_id)
+                        prepped = cls.prep_proto(v, dataset_id=dataset_id, descriptor=child_descriptor)
                         if prepped is not Placeholders.InvalidParameterPlaceholder:
                             new[k] = prepped
             if len(new) == 0:
@@ -694,14 +744,17 @@ class ProtoTemplater:
             new = []
             for p in proto:
                 if p is Placeholders.InvalidParameterPlaceholder: continue
-                prepped = cls.prep_proto(p, dataset_id=dataset_id)
+                prepped = cls.prep_proto(p, dataset_id=dataset_id, descriptor=descriptor)
                 if prepped is Placeholders.InvalidParameterPlaceholder:continue
                 new.append(prepped)
             if len(new) == 0:
                 new = Placeholders.InvalidParameterPlaceholder
         elif isinstance(proto, str):
-            if proto.startswith('url('):
-                new = {'url':dataset_id+"_"+proto[4:-1]}
+            if descriptor is not False and proto.startswith('url(') and proto.endswith(')'):
+                target = proto[4:-1].strip()
+                if not target:
+                    raise ValueError("url() requires a file name or URL")
+                new = {'url': target}
             else:
                 new = proto
         else:
@@ -713,7 +766,7 @@ class ProtoTemplater:
     def build_proto(cls, proto):
         from .proto import reaction_pb2
         from google.protobuf.json_format import ParseDict
-        proto = cls.prep_proto(proto)
+        proto = cls.prep_proto(proto, descriptor=reaction_pb2.Reaction.DESCRIPTOR)
         rxn = ParseDict(proto, reaction_pb2.Reaction())
         return rxn
 
@@ -1275,6 +1328,11 @@ class ProtoHandler:
         if key_name in default_paths.get(root_type.value_type, []):
             return default_paths[root_type.value_type][key_name]
 
+        # An explicit field wins over a shorthand enum with the same name.
+        # ReactionWorkup has both a temperature field and a TEMPERATURE type.
+        if units is None and any(field.name == key_name for field in cls.field_iter(root_type.value_type)):
+            return [key_name], None
+
         unames, bad_names = cls.get_unique_keys(root_type.value_type)
         if key_name in bad_names:
             raise ValueError(
@@ -1438,7 +1496,7 @@ class DatasetConstructor:
             return f'<{obj.name}:{obj.value}>'
             # return base64.b16encode(obj).decode('ascii')
         elif isinstance(obj, (set,)):
-            return cls.prep_object_json(obj)
+            return sorted((cls.prep_object_json(o) for o in obj), key=repr)
         else:
             return obj
 
@@ -1511,8 +1569,39 @@ class DatasetConstructor:
         # adapted from templating.py
         if suffix is None:
             _, suffix = os.path.splitext(file_name_or_buffer)
-        if suffix in [".xls", ".xlsx"]:
-            data = pd.read_excel(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
+        if suffix == ".xlsx":
+            # pandas can coerce Boolean cells into integers when a column mixes
+            # different header blocks. Read typed cells before converting to text.
+            import openpyxl
+            workbook = openpyxl.load_workbook(file_name_or_buffer, read_only=True, data_only=True)
+            blocks = []
+            try:
+                for sheet in workbook.worksheets:
+                    rows = [["" if value is None else str(value) for value in row]
+                            for row in sheet.iter_rows(values_only=True)]
+                    if not any(any(value for value in row) for row in rows):
+                        continue
+                    try:
+                        blocks.extend(cls.from_iter(rows, extra_fields=extra_fields,
+                                                    optional_fields=optional_fields))
+                    except Exception as error:
+                        raise ValueError(f"Worksheet {sheet.title}: {error}") from error
+            finally:
+                workbook.close()
+            return blocks
+        if suffix == ".xls":
+            sheets = pd.read_excel(file_name_or_buffer, sheet_name=None, header=None,
+                                   dtype=str, keep_default_na=False)
+            blocks = []
+            for sheet_name, data in sheets.items():
+                if data.empty:
+                    continue
+                try:
+                    blocks.extend(cls.from_iter(data.values, extra_fields=extra_fields,
+                                                optional_fields=optional_fields))
+                except Exception as error:
+                    raise ValueError(f"Worksheet {sheet_name}: {error}") from error
+            return blocks
         else:
             data = pd.read_csv(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
         return cls.from_iter(data.values, extra_fields=extra_fields, optional_fields=optional_fields)
@@ -1578,8 +1667,8 @@ class DatasetConstructor:
         return [
             (
                 [s.strip() for s in subtree.split(cls.specifier_char)]
-                    if ":" in subtree else
-                subtree
+                    if ":" in subtree and subtree.replace(' ', '').lower() != 'time:value' else
+                ('Time' if subtree.replace(' ', '').lower() == 'time:value' else subtree)
             )
                 if isinstance(subtree, str) else
             cls.split_specifier_fields(subtree)
@@ -1660,7 +1749,9 @@ class DatasetConstructor:
                 rxn.insert_dict(optional_fields, optional=True)
             templater = ProtoTemplater.from_proto(rxn)
             csv_data = cls.sanitize_csv_data(
-                [s for s in common[-1] if len(s) > 0],
+                [value for column, value in enumerate(common[-1])
+                 if value or any(column < len(header) and header[column].strip()
+                                 for header in common[:-1])],
                 len(templater.template_paths)
             )
             base_template = templater.apply(csv_data)
@@ -1717,12 +1808,13 @@ class DatasetConstructor:
                 )
                 stripped_missings = ProtoTemplater.prep_proto(
                     templated_proto,
-                    dataset_id=id
+                    dataset_id=id,
+                    descriptor=ProtoHandler.parallel_proto.Reaction.DESCRIPTOR
                 )
                 protos.append(
                     dict(
                         stripped_missings,
-                        reaction_id="cmcc-" + subid + templ.format(reaction_num)
+                        reaction_id=stripped_missings.pop("reaction_id", None) or "cmcc-" + subid + templ.format(reaction_num)
                     )
                 )
 

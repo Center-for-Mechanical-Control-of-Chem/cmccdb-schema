@@ -132,7 +132,7 @@ _UNIT_SYNONYMS = {
     reaction_pb2.FlowRate: {
         reaction_pb2.FlowRate.MICROLITER_PER_MINUTE: ["μL/min", "uL/min"],
         reaction_pb2.FlowRate.MICROLITER_PER_SECOND: ["μL/s", "uL/s"],
-        reaction_pb2.FlowRate.MILLILITER_PER_MINUTE: ["mL/min"],
+        reaction_pb2.FlowRate.MILLILITER_PER_MINUTE: ["mL/min", "cm^3/min", "cm3/min", "cm³/min", "cc/min"],
         reaction_pb2.FlowRate.MILLILITER_PER_SECOND: ["mL/s"],
         reaction_pb2.FlowRate.MICROLITER_PER_HOUR: ["μL/h", "uL/h"],
     },
@@ -142,7 +142,8 @@ _UNIT_SYNONYMS = {
         reaction_pb2.FeedingRate.KILOGRAMS_PER_HOUR: ["kg/h"],
     },
     reaction_pb2.Frequency: {
-        reaction_pb2.Frequency.HERTZ: ["Hz", "hz"]
+        reaction_pb2.Frequency.HERTZ: ["Hz"],
+        reaction_pb2.Frequency.RPM: ["rpm", "rev/min", "revolutions/minute"],
     },
     reaction_pb2.Force: {
         reaction_pb2.Force.NEWTON: ["N"],
@@ -158,6 +159,10 @@ _FORBIDDEN_UNITS = {
 }
 
 _UNIT_CONVERSIONS = {
+    reaction_pb2.Frequency: {
+        reaction_pb2.Frequency.HERTZ: 1,
+        reaction_pb2.Frequency.RPM: 1 / 60,
+    },
     reaction_pb2.Time: {
         reaction_pb2.Time.DAY: 24,
         reaction_pb2.Time.HOUR: 1,
@@ -268,7 +273,7 @@ class UnitResolver:
                     self._resolver[string_unit] = (message, unit)
         # Values must have zero or one decimal point. Whitespace between the
         # value and the unit is optional.
-        self._pattern = re.compile(r"(-?\d+\.?\d*(?:[eE]-?\d+)?)(?:[-±](-?\d+\.?\d*))?\s*([\w\sμ°]+)\.?")
+        self._pattern = re.compile(r"(-?\d+\.?\d*(?:[eE]-?\d+)?)(?:[-±](-?\d+\.?\d*))?\s*([\w\sμ°/^⁻-]+)\.?")
 
     def resolve(self, string: str, allow_range: bool = False) -> cmccdb_schema.UnitMessage:
         """Resolves a string into a message containing a value with units.

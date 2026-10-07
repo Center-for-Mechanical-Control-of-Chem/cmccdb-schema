@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import NotSupportedError, OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.engine import URL
 
 from cmccdb_schema.logging_helpers import get_logger
 from cmccdb_schema.orm.mappers import Base, Mappers, from_proto
@@ -35,7 +36,8 @@ def get_connection_string(
     database: str, username: str, password: str, host: str = "localhost", port: int = 5432
 ) -> str:
     """Creates an SQLAlchemy connection string."""
-    return f"postgresql://{username}:{password}@{host}:{port}/{database}?client_encoding=utf-8"
+    return URL.create('postgresql', username=username, password=password,
+        host=host, port=port, database=database, query={'client_encoding': 'utf-8'}).render_as_string(hide_password=False)
 
 def prepare_database(engine: Engine) -> bool:
     """Prepares the database and creates the ORM table structure.
@@ -46,6 +48,15 @@ def prepare_database(engine: Engine) -> bool:
     Returns:
         Whether the RDKit PostgreSQL cartridge is installed.
     """
+    from sqlalchemy import inspect
+    from cmccdb_schema.orm import schema_updates
+    if inspect(engine).has_table('dataset', schema='cmccdb'):
+        with engine.connect() as connection:
+            preview = schema_updates.plan(connection, Base.metadata)
+            cartridge = bool(connection.scalar(text("SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname='rdkit')")))
+        if preview['required'] or not preview['compatible']:
+            raise schema_updates.MigrationRequired('Database schema needs an explicit backed-up migration: ' + '; '.join(preview['blockers']))
+        return cartridge
     with engine.begin() as connection:
         try:
             connection.execute(text("CREATE EXTENSION IF NOT EXISTS tsm_system_rows"))  # For random sampling.
@@ -66,11 +77,21 @@ def prepare_database(engine: Engine) -> bool:
         rdkit_cartridge = False
     with patch.dict(os.environ, {"CMCCDB_POSTGRES_RDKIT": "1" if rdkit_cartridge else "0"}):
         Base.metadata.create_all(engine)
+        with engine.begin() as connection:
+            schema_updates.record_version(connection)
     return rdkit_cartridge
 
 
 def add_dataset(dataset: dataset_pb2.Dataset, session: Session, rdkit_cartridge: bool = True) -> None:
     """Adds a dataset to the database."""
+    if dataset.reactions and dataset.reaction_ids:
+        raise ValueError('A dataset cannot contain both reactions and reaction_ids')
+    if dataset.reaction_ids:
+        existing = set(session.execute(select(Mappers.Reaction.reaction_id)
+            .where(Mappers.Reaction.reaction_id.in_(dataset.reaction_ids))).scalars())
+        missing = set(dataset.reaction_ids) - existing
+        if missing:
+            raise ValueError(f'Dataset refers to unknown reaction IDs: {sorted(missing)}')
     logger.info(f"Adding dataset {dataset.dataset_id}")
     start = time.time()
     mapped_dataset = from_proto(dataset)
@@ -208,7 +229,8 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
     updates = []
     for cmccdb_id, rdkit_id in query.fetchall():
         updates.append({"id": cmccdb_id, "rdkit_reaction_id": rdkit_id})
-    session.execute(update(Mappers.Reaction), updates)
+    if updates:
+        session.bulk_update_mappings(Mappers.Reaction, updates)
     # Update Compound.
     query = session.execute(
         select(Mappers.Compound.id, RDKitMol.id)
@@ -221,7 +243,8 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
     updates = []
     for cmccdb_id, rdkit_id in query.fetchall():
         updates.append({"id": cmccdb_id, "rdkit_mol_id": rdkit_id})
-    session.execute(update(Mappers.Compound), updates)
+    if updates:
+        session.bulk_update_mappings(Mappers.Compound, updates)
     # Update ProductCompound.
     query = session.execute(
         select(Mappers.ProductCompound.id, RDKitMol.id)
@@ -234,5 +257,6 @@ def update_rdkit_ids(dataset_id: str, session: Session) -> None:
     updates = []
     for cmccdb_id, rdkit_id in query.fetchall():
         updates.append({"id": cmccdb_id, "rdkit_mol_id": rdkit_id})
-    session.execute(update(Mappers.ProductCompound), updates)
+    if updates:
+        session.bulk_update_mappings(Mappers.ProductCompound, updates)
     logger.info(f"Updating RDKit IDs took {time.time() - start:g}s")
