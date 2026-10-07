@@ -19,19 +19,19 @@ with open("README.md") as f:
     long_description = f.read()
 
 setuptools.setup(
-    name="ord-schema",
+    name="cmccdb-schema",
     version="0.3.80",
-    description="Schema for the Open Reaction Database",
+    description="Schema for the CMCC Reaction Database",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Open-Reaction-Database/ord-schema",
+    url="https://github.com/Center-for-Mechanical-Control-of-Chem/cmccdb-schema",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     packages=setuptools.find_packages(),
-    package_data={"ord_schema.proto": ["*.pyi"]},
+    package_data={"cmccdb_schema.proto": ["*.pyi"]},
     python_requires=">=3.10",
     install_requires=[
         "docopt>=0.6.2",
@@ -42,7 +42,7 @@ setuptools.setup(
         "numpy<2",
         "openpyxl>=3.0.5",
         "pandas>=1.0.4",
-        "protobuf==4.22.3",
+        "protobuf>=5.27.3,<6",
         "psycopg2-binary>=2.8.5",
         "pygithub>=1.51",
         "python-dateutil>=1.10.0",
