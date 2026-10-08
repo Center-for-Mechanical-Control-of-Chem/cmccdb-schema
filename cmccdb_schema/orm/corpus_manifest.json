@@ -816,5 +816,51 @@
       "file": "aux/ndi2_eds_spectrum.csv",
       "sha256": "99ff17b10d6a5eefb29c92ade923f5c103fe6fa6ea51cc69573ef270e5a586e2"
     }
-  ]
+  ],
+  "accepted_repairs": {
+    "incomplete/co2_fixation_10.1039.D5MR00072F.xlsx": {
+      "sha256": "0a1ed56ba1284c77bc20cbcd85083028bd35aa4ae055cefc05efcc2ed3ef3b0e",
+      "reactions": 14
+    },
+    "incomplete/copper_10.1039.D3SC01591B.xlsx": {
+      "sha256": "183144d2cbff0f093005e854a79b84cb241f99f0c366f4edb4b01ef007577ffa",
+      "reactions": 80
+    },
+    "incomplete/diels_alder_10.1126.science.adf5273.xlsx": {
+      "sha256": "c63da6ee1854d4263cde38640faf193d8f538a9536851e38b3a5ab161de83a7d",
+      "reactions": 52
+    },
+    "incomplete/reu/coronel.xlsx": {
+      "sha256": "1151fe90e263003314761d2b501617e1a30b93ed9a53f611028f53038d23e212",
+      "reactions": 27
+    },
+    "incomplete/reu/danurand.xlsx": {
+      "sha256": "b480dc1b5f382b86133b9bc00f13e6f31b865197e5c2825b87f79b28fd843591",
+      "reactions": 81
+    },
+    "incomplete/reu/koschnich.xlsx": {
+      "sha256": "28d492a142b8cb2450da39680a61208c55a07cb4aeb3c2cba3bb7467496cfefd",
+      "reactions": 54
+    },
+    "incomplete/reu/lankford.xlsx": {
+      "sha256": "b59b12fc255793f2f160a03733c7b4ea57a0fcd8e8dbce13f11fd1da11cd1591",
+      "reactions": 12
+    },
+    "incomplete/reu/poole.xlsx": {
+      "sha256": "753dddcfffa26ff66e65f929588580b9bc398a6319c9094f31c473faa155934c",
+      "reactions": 23
+    },
+    "incomplete/reu/scally.xlsx": {
+      "sha256": "adde8bd6e314fd2e8804e588292112288ee7d0f6f0efef02823cc01d9a4162c1",
+      "reactions": 22
+    },
+    "incomplete/reu/wilson.xlsx": {
+      "sha256": "0d9956799701cb5cdc99ac8e2197ec652a8cb105a6b6b4fba59225150fef730d",
+      "reactions": 24
+    },
+    "incomplete/sonogashira_10.1039.c000674b.xlsx": {
+      "sha256": "913bc5677c8c60636b554d1e9cb9d1cb3369f108f0296a22c3e2c7f223ceb3f2",
+      "reactions": 80
+    }
+  }
 }

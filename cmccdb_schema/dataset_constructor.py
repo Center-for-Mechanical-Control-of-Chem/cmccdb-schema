@@ -49,7 +49,7 @@ def normalize_key(k):
         "extruder_feed_rate": "feed_rate",
     }.get(k, k)
     if units is not None:
-        units = units.replace(")", "").strip()
+        units = units.replace(")", "").strip().replace("µ", "μ")
         units = unit_aliases.get(units, units).replace(" ", "_").lower()
     return k, units
 
@@ -1512,11 +1512,15 @@ class DatasetConstructor:
         variants = []
         data = []
         active = None
+        started = False
         for row in iterable:
+            if len(row) == 0:
+                row = [""]
             if row[0].startswith(DatasetBlocks.COMMENT.value):
                 continue
             key = row[0].upper()
             if key == DatasetBlocks.REACTION_BLOCK.value:
+                started = True
                 if active is None:
                     active = DatasetBlocks.REACTION_BLOCK
                 elif active is not DatasetBlocks.DATA_BLOCK:
@@ -1526,6 +1530,7 @@ class DatasetConstructor:
                     common = []
                     variants = []
                     data = []
+                    active = DatasetBlocks.REACTION_BLOCK
             elif key == DatasetBlocks.VARIANTS_BLOCK.value:
                 if active is None or active is not DatasetBlocks.REACTION_BLOCK:
                     raise ValueError("expected to be on a reaction block")
@@ -1536,6 +1541,8 @@ class DatasetConstructor:
                 active = DatasetBlocks.DATA_BLOCK
             elif active is not None and len(row[0]) > 0:
                 raise ValueError("unknown block specifier {}".format(row[0]))
+            elif active is None and started and any(value.strip() for value in row):
+                raise ValueError("nonempty row outside a reaction block; add a REACTION header")
             elif active is not None and all(r=="" for r in row):
                 if active is not DatasetBlocks.DATA_BLOCK:
                     raise ValueError("expected to be on a data block")
@@ -1579,6 +1586,11 @@ class DatasetConstructor:
                 for sheet in workbook.worksheets:
                     rows = [["" if value is None else str(value) for value in row]
                             for row in sheet.iter_rows(values_only=True)]
+                    # A valid XLSX may omit worksheet dimensions. Read-only
+                    # readers then return rows of different widths (even ()).
+                    width = max((len(row) for row in rows), default=1)
+                    width = max(width, 1)
+                    rows = [row + [""] * (width - len(row)) for row in rows]
                     if not any(any(value for value in row) for row in rows):
                         continue
                     try:
@@ -1752,6 +1764,43 @@ class DatasetConstructor:
         for k in sorted(template.keys(), key=lambda rk:reaction_fields.index(rk)):
             new[k] = template[k]
         return new
+
+    @classmethod
+    def _insert_headers_in_column_order(cls, reaction, tree):
+        """Keep the source order when shorthand headers revisit a proto branch.
+
+        Dict traversal groups e.g. every input ahead of every outcome, even when
+        the worksheet has REACTANT, PRODUCT, ADDITIVE columns in that order.
+        Record the placeholders introduced by each complete header group.
+        """
+        ordered = []
+        group = []
+        for header in [*tree, None]:
+            if (header is None or isinstance(header, str)) and group:
+                before = {tuple(path) for path in ProtoTemplater.get_template_paths(reaction.to_template())}
+                reaction.insert_tree(group)
+                ordered.extend(path for path in ProtoTemplater.get_template_paths(reaction.to_template())
+                               if tuple(path) not in before)
+                group = []
+            if header is not None:
+                group.append(header)
+        return ordered
+
+    @classmethod
+    def _merged_variant_path(cls, path, base, variant):
+        """Account for common repeated elements prepended during template merge."""
+        merged = []
+        for key in path:
+            if isinstance(variant, list):
+                merged.append(key + (len(base) if isinstance(base, list) else 0))
+                variant = variant[key]
+                base = None
+            else:
+                merged.append(key)
+                variant = variant[key]
+                base = base.get(key) if isinstance(base, dict) else None
+        return merged
+
     @classmethod
     def setup_template(cls, common, variant, extra_fields=None, optional_fields=None):
 
@@ -1760,7 +1809,7 @@ class DatasetConstructor:
             ProtoMessage.default_constructable = True
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
             nt_tree = cls.parse_csv_rows(common[:-1])
-            rxn.insert_tree(nt_tree)
+            common_paths = cls._insert_headers_in_column_order(rxn, nt_tree)
             ProtoMessage.default_constructable = False
 
             if extra_fields is not None:
@@ -1768,6 +1817,8 @@ class DatasetConstructor:
             if optional_fields is not None:
                 rxn.insert_dict(optional_fields, optional=True)
             templater = ProtoTemplater.from_proto(rxn)
+            remaining = [path for path in templater.template_paths if path not in common_paths]
+            templater._paths = common_paths + remaining
             csv_data = cls.sanitize_csv_data(
                 [value for column, value in enumerate(common[-1])
                  if value or any(column < len(header) and header[column].strip()
@@ -1778,7 +1829,7 @@ class DatasetConstructor:
 
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
             var_tree = cls.parse_csv_rows(variant)
-            rxn.insert_tree(var_tree)
+            variant_paths = cls._insert_headers_in_column_order(rxn, var_tree)
             var_template = rxn.to_template()
         finally:
             ProtoMessage.default_constructable = cur_const
@@ -1786,10 +1837,13 @@ class DatasetConstructor:
                 base_template,
                 var_template
             )
-        return ProtoTemplater(
+        templater = ProtoTemplater(
             combo,
             rxn
         )
+        templater._paths = [cls._merged_variant_path(path, base_template, var_template)
+                           for path in variant_paths]
+        return templater
 
     @property
     def template(self):

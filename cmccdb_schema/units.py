@@ -262,13 +262,14 @@ class UnitResolver:
             unit_synonyms = _UNIT_SYNONYMS
         if forbidden_units is None:
             forbidden_units = _FORBIDDEN_UNITS
-        self._forbidden_units = forbidden_units
+        self._forbidden_units = {key.lower().replace("µ", "μ"): reason
+                                 for key, reason in forbidden_units.items()}
         self._resolver = {}
         for message in unit_synonyms:
             for unit in unit_synonyms[message]:
                 for string_unit in unit_synonyms[message][unit]:
-                    string_unit = string_unit.lower()
-                    if string_unit in self._resolver:
+                    string_unit = string_unit.lower().replace("µ", "μ")
+                    if string_unit in self._resolver and self._resolver[string_unit] != (message, unit):
                         raise KeyError(f"duplicated unit: {string_unit}")
                     self._resolver[string_unit] = (message, unit)
         # Values must have zero or one decimal point. Whitespace between the
@@ -293,7 +294,7 @@ class UnitResolver:
                 the value is invalid.
         """
         # NOTE(kearnes): Use fullmatch() to catch cases with multiple matches.
-        match = self._pattern.fullmatch(string.strip().replace("−", "-"))
+        match = self._pattern.fullmatch(string.strip().replace("−", "-").replace("µ", "μ"))
         if not match:
             raise ValueError(f"string does not contain a value with units: {string}")
         value, range_value, string_unit = match.groups()
@@ -330,7 +331,7 @@ class UnitResolver:
         Raises:
             KeyError: if string unit cannot be parsed.
         """
-        string_unit = string_unit.lower()
+        string_unit = string_unit.lower().replace("µ", "μ")
         if string_unit in self._forbidden_units:
             raise KeyError(f"forbidden units: {string_unit}: " f"({self._forbidden_units[string_unit]})")
         if string_unit not in self._resolver:

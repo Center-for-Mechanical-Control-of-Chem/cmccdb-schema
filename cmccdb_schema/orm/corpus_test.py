@@ -32,8 +32,11 @@ def load_dataset(path):
 def test_corpus_roundtrip(path, corpus_session, record_property):
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     record_property('sha256', digest)
-    expected = MANIFEST['invalid'].get(str(path.relative_to(DATA_ROOT)))
-    if expected:
+    relative = str(path.relative_to(DATA_ROOT))
+    expected = MANIFEST['invalid'].get(relative)
+    repaired = MANIFEST.get('accepted_repairs', {}).get(relative)
+    accepted_repair = repaired is not None and digest == repaired['sha256']
+    if expected and not accepted_repair:
         assert digest == expected['sha256'], 'Changed corpus input needs a new review'
         with pytest.raises(Exception) as caught:
             load_dataset(path)
@@ -41,6 +44,8 @@ def test_corpus_roundtrip(path, corpus_session, record_property):
         assert expected['message'] in str(caught.value)
         return
     dataset = load_dataset(path)
+    if accepted_repair:
+        assert len(dataset.reactions) == repaired['reactions']
     record_property('reactions', len(dataset.reactions))
     record_property('reaction_types', sorted({i.value for r in dataset.reactions for i in r.identifiers}))
     assert to_proto(from_proto(dataset)) == dataset

@@ -226,17 +226,13 @@ class TestBlockParsing:
         blocks = dc.DatasetConstructor.from_iter(rows)
         assert len(blocks) == 1
 
-    def test_second_reaction_block_requires_a_blank_separator_row(self):
-        # Two REACTION blocks back-to-back with no blank line between them
-        # is a documented-by-behavior quirk: the parser does not reset its
-        # "active" block state on a bare REACTION row following a DATA
-        # block, so it misinterprets the following rows and eventually
-        # raises when it hits the second VARIANTS row.
+    def test_second_reaction_block_resets_state_without_a_blank_separator(self):
         first = minimal_template_rows(reaction_type="Block A")
         second = minimal_template_rows(reaction_type="Block B")
         rows = first + second
-        with pytest.raises(ValueError, match="expected to be on a reaction block"):
-            dc.DatasetConstructor.from_iter(rows)
+        blocks = dc.DatasetConstructor.from_iter(rows)
+        assert len(blocks) == 2
+        assert [len(data) for _, data in blocks] == [2, 2]
 
     def test_multiple_blocks_with_blank_separator_all_parse(self):
         first = minimal_template_rows(reaction_type="Block A")
@@ -550,16 +546,16 @@ class TestValidationIntegration:
 # --------------------------------------------------------------------------
 
 
-def _xlsx_files(*subdirs):
+def _xlsx_files(*subdirs, recursive=False):
     paths = []
     for subdir in subdirs:
         directory = os.path.join(CMCCDB_DATA_ROOT, subdir)
         if os.path.isdir(directory):
             paths.extend(
                 sorted(
-                    os.path.join(directory, name)
-                    for name in os.listdir(directory)
-                    if name.endswith(".xlsx") and not name.startswith("~$")
+                    str(path)
+                    for path in (Path(directory).rglob("*.xlsx") if recursive else Path(directory).glob("*.xlsx"))
+                    if path.is_file() and not path.name.startswith("~$")
                 )
             )
     return paths
@@ -606,12 +602,16 @@ class TestRealWorldTemplates:
             roundtrip = reaction_pb2.Reaction.FromString(rxn.SerializeToString())
             assert roundtrip == rxn
 
-    @pytest.mark.parametrize("xlsx_path", _xlsx_files("incomplete", "b3m2a1"), ids=os.path.basename)
+    @pytest.mark.parametrize("xlsx_path", _xlsx_files("incomplete", "b3m2a1", recursive=True), ids=os.path.basename)
     def test_incomplete_templates_smoke(self, xlsx_path, tmp_path):
         manifest = json.loads((Path(__file__).parent / "cmccdb_schema/orm/corpus_manifest.json").read_text())
         relative = os.path.relpath(xlsx_path, CMCCDB_DATA_ROOT)
         expected = manifest["invalid"].get(relative)
-        if expected:
+        repaired = manifest.get("accepted_repairs", {}).get(relative)
+        if repaired and hashlib.sha256(Path(xlsx_path).read_bytes()).hexdigest() == repaired["sha256"]:
+            dataset = dc.DatasetConstructor.enumerate_spreadsheet(xlsx_path)
+            assert len(dataset.reactions) == repaired["reactions"]
+        elif expected:
             assert hashlib.sha256(Path(xlsx_path).read_bytes()).hexdigest() == expected["sha256"]
             with pytest.raises(Exception) as caught:
                 dc.DatasetConstructor.enumerate_spreadsheet(xlsx_path)
