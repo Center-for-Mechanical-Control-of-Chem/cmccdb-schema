@@ -15065,7 +15065,8 @@ proto.cmccdb.ProductCompound.toObject = function(includeInstance, msg) {
     isolatedColor: jspb.Message.getFieldWithDefault(msg, 4, ""),
     texture: (f = msg.getTexture()) && proto.cmccdb.Texture.toObject(includeInstance, f),
     featuresMap: (f = msg.getFeaturesMap()) ? f.toObject(includeInstance, proto.cmccdb.Data.toObject) : [],
-    reactionRole: jspb.Message.getFieldWithDefault(msg, 7, 0)
+    reactionRole: jspb.Message.getFieldWithDefault(msg, 7, 0),
+    crystalParameters: (f = msg.getCrystalParameters()) && proto.cmccdb.CrystalParameters.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -15134,6 +15135,11 @@ proto.cmccdb.ProductCompound.deserializeBinaryFromReader = function(msg, reader)
     case 7:
       var value = /** @type {!proto.cmccdb.ReactionRole.ReactionRoleType} */ (reader.readEnum());
       msg.setReactionRole(value);
+      break;
+    case 100:
+      var value = new proto.cmccdb.CrystalParameters;
+      reader.readMessage(value,proto.cmccdb.CrystalParameters.deserializeBinaryFromReader);
+      msg.setCrystalParameters(value);
       break;
     default:
       reader.skipField();
@@ -15211,6 +15217,14 @@ proto.cmccdb.ProductCompound.serializeBinaryToWriter = function(message, writer)
     writer.writeEnum(
       7,
       f
+    );
+  }
+  f = message.getCrystalParameters();
+  if (f != null) {
+    writer.writeMessage(
+      100,
+      f,
+      proto.cmccdb.CrystalParameters.serializeBinaryToWriter
     );
   }
 };
@@ -15421,6 +15435,43 @@ proto.cmccdb.ProductCompound.prototype.getReactionRole = function() {
  */
 proto.cmccdb.ProductCompound.prototype.setReactionRole = function(value) {
   return jspb.Message.setProto3EnumField(this, 7, value);
+};
+
+
+/**
+ * optional CrystalParameters crystal_parameters = 100;
+ * @return {?proto.cmccdb.CrystalParameters}
+ */
+proto.cmccdb.ProductCompound.prototype.getCrystalParameters = function() {
+  return /** @type{?proto.cmccdb.CrystalParameters} */ (
+    jspb.Message.getWrapperField(this, proto.cmccdb.CrystalParameters, 100));
+};
+
+
+/**
+ * @param {?proto.cmccdb.CrystalParameters|undefined} value
+ * @return {!proto.cmccdb.ProductCompound} returns this
+*/
+proto.cmccdb.ProductCompound.prototype.setCrystalParameters = function(value) {
+  return jspb.Message.setWrapperField(this, 100, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.cmccdb.ProductCompound} returns this
+ */
+proto.cmccdb.ProductCompound.prototype.clearCrystalParameters = function() {
+  return this.setCrystalParameters(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.cmccdb.ProductCompound.prototype.hasCrystalParameters = function() {
+  return jspb.Message.getField(this, 100) != null;
 };
 
 
@@ -21251,7 +21302,8 @@ proto.cmccdb.Length.LengthUnit = {
   MILLIMETER: 2,
   METER: 3,
   INCH: 4,
-  FOOT: 5
+  FOOT: 5,
+  ANGSTROM: 6
 };
 
 /**

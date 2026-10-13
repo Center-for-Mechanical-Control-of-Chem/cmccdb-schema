@@ -81,6 +81,7 @@ _UNIT_SYNONYMS = {
         reaction_pb2.Length.METER: ["meter", "meters"],
         reaction_pb2.Length.INCH: ["in", "inch", "inches"],
         reaction_pb2.Length.FOOT: ["ft", "foot", "feet"],
+        reaction_pb2.Length.ANGSTROM: ["Å", "Å", "angstrom", "angstroms"],
     },
     reaction_pb2.Angle: {
         reaction_pb2.Angle.DEGREES: ["deg", "degree", "degrees"],
@@ -193,6 +194,7 @@ _UNIT_CONVERSIONS = {
         reaction_pb2.Length.METER: 100,
         reaction_pb2.Length.INCH: 2.54,
         reaction_pb2.Length.FOOT: 30.48,
+        reaction_pb2.Length.ANGSTROM: 1e-8,
     },
     reaction_pb2.Pressure: {
         reaction_pb2.Pressure.BAR: 1 / 1.01325,

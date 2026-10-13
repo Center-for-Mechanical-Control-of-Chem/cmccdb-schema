@@ -11,6 +11,8 @@ import tempfile
 import numpy as np
 import pandas as pd
 
+DATASET_METADATA_MARKER = "Dataset (v1)"
+
 
 class Placeholders(enum.Enum):
     TemplateKey = "key"
@@ -1572,8 +1574,26 @@ class DatasetConstructor:
         ]
 
     @classmethod
-    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None, optional_fields=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
+    def _collect_dataset_metadata(cls, rows, metadata):
+        """Read reserved literal metadata comments; never import identity keys."""
+        for row in rows:
+            if len(row) < 2 or row[0] != "#!" or row[1] != DATASET_METADATA_MARKER:
+                continue
+            if len(row) < 4 or any(value != "" for value in row[4:]):
+                raise ValueError("Dataset metadata needs exactly comment, version, field and literal value")
+            field = row[2]
+            if field not in {"name", "description"}:
+                raise ValueError(f"Unsupported dataset metadata field: {field}")
+            value = row[3]
+            if field in metadata and metadata[field] != value:
+                raise ValueError(f"Conflicting dataset metadata field: {field}")
+            metadata[field] = value
+
+    @classmethod
+    def from_spreadsheet(cls, file_name_or_buffer, suffix=None, extra_fields=None, optional_fields=None,
+                         dataset_metadata=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
         # adapted from templating.py
+        metadata = {} if dataset_metadata is None else dataset_metadata
         if suffix is None:
             _, suffix = os.path.splitext(file_name_or_buffer)
         if suffix == ".xlsx":
@@ -1594,6 +1614,7 @@ class DatasetConstructor:
                     if not any(any(value for value in row) for row in rows):
                         continue
                     try:
+                        cls._collect_dataset_metadata(rows, metadata)
                         blocks.extend(cls.from_iter(rows, extra_fields=extra_fields,
                                                     optional_fields=optional_fields))
                     except Exception as error:
@@ -1609,6 +1630,7 @@ class DatasetConstructor:
                 if data.empty:
                     continue
                 try:
+                    cls._collect_dataset_metadata(data.values.tolist(), metadata)
                     blocks.extend(cls.from_iter(data.values, extra_fields=extra_fields,
                                                 optional_fields=optional_fields))
                 except Exception as error:
@@ -1616,6 +1638,7 @@ class DatasetConstructor:
             return blocks
         else:
             data = pd.read_csv(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
+        cls._collect_dataset_metadata(data.values.tolist(), metadata)
         return cls.from_iter(data.values, extra_fields=extra_fields, optional_fields=optional_fields)
 
     @classmethod
@@ -1857,17 +1880,21 @@ class DatasetConstructor:
                               name=None,
                               id=None,
                               extra_fields=None,
-                              optional_fields=None
+                              optional_fields=None,
+                              default_name=None
                               ):
         from google.protobuf.json_format import ParseDict
         from .proto import dataset_pb2
 
-        if name is None:
-            name, _ = os.path.splitext(os.path.basename(file))
         if id is None:
             id = str(uuid.uuid4()).replace("-", "")[:32]
 
-        parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields, optional_fields=optional_fields)
+        metadata = {}
+        parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields, optional_fields=optional_fields,
+                                          dataset_metadata=metadata)
+        if name is None:
+            name = metadata.get("name", default_name if default_name is not None else
+                                os.path.splitext(os.path.basename(file))[0])
         protos = []
         total_rxns = len([r for _,d in parser_data for r in d])
         ndig = max([4, len(str(total_rxns))])
@@ -1895,6 +1922,7 @@ class DatasetConstructor:
         return ParseDict(
             {
                 "name":name,
+                "description":metadata.get("description", ""),
                 "dataset_id":"cmcc_dataset-"+id,
                 "reactions": protos
             },

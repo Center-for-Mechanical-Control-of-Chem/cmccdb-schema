@@ -1177,7 +1177,7 @@ class ReactionOutcome(_message.Message):
     def __init__(self, reaction_time: _Optional[_Union[Time, _Mapping]] = ..., conversion: _Optional[_Union[Percentage, _Mapping]] = ..., products: _Optional[_Iterable[_Union[ProductCompound, _Mapping]]] = ..., analyses: _Optional[_Mapping[str, Analysis]] = ...) -> None: ...
 
 class ProductCompound(_message.Message):
-    __slots__ = ("identifiers", "is_desired_product", "measurements", "isolated_color", "texture", "features", "reaction_role")
+    __slots__ = ("identifiers", "is_desired_product", "measurements", "isolated_color", "texture", "features", "reaction_role", "crystal_parameters")
     class FeaturesEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -1192,6 +1192,7 @@ class ProductCompound(_message.Message):
     TEXTURE_FIELD_NUMBER: _ClassVar[int]
     FEATURES_FIELD_NUMBER: _ClassVar[int]
     REACTION_ROLE_FIELD_NUMBER: _ClassVar[int]
+    CRYSTAL_PARAMETERS_FIELD_NUMBER: _ClassVar[int]
     identifiers: _containers.RepeatedCompositeFieldContainer[CompoundIdentifier]
     is_desired_product: bool
     measurements: _containers.RepeatedCompositeFieldContainer[ProductMeasurement]
@@ -1199,7 +1200,8 @@ class ProductCompound(_message.Message):
     texture: Texture
     features: _containers.MessageMap[str, Data]
     reaction_role: ReactionRole.ReactionRoleType
-    def __init__(self, identifiers: _Optional[_Iterable[_Union[CompoundIdentifier, _Mapping]]] = ..., is_desired_product: bool = ..., measurements: _Optional[_Iterable[_Union[ProductMeasurement, _Mapping]]] = ..., isolated_color: _Optional[str] = ..., texture: _Optional[_Union[Texture, _Mapping]] = ..., features: _Optional[_Mapping[str, Data]] = ..., reaction_role: _Optional[_Union[ReactionRole.ReactionRoleType, str]] = ...) -> None: ...
+    crystal_parameters: CrystalParameters
+    def __init__(self, identifiers: _Optional[_Iterable[_Union[CompoundIdentifier, _Mapping]]] = ..., is_desired_product: bool = ..., measurements: _Optional[_Iterable[_Union[ProductMeasurement, _Mapping]]] = ..., isolated_color: _Optional[str] = ..., texture: _Optional[_Union[Texture, _Mapping]] = ..., features: _Optional[_Mapping[str, Data]] = ..., reaction_role: _Optional[_Union[ReactionRole.ReactionRoleType, str]] = ..., crystal_parameters: _Optional[_Union[CrystalParameters, _Mapping]] = ...) -> None: ...
 
 class ProductMeasurement(_message.Message):
     __slots__ = ("analysis_key", "type", "details", "uses_internal_standard", "is_normalized", "uses_authentic_standard", "authentic_standard", "percentage", "float_value", "string_value", "amount", "retention_time", "mass_spec_details", "selectivity", "wavelength")
@@ -1707,12 +1709,14 @@ class Length(_message.Message):
         METER: _ClassVar[Length.LengthUnit]
         INCH: _ClassVar[Length.LengthUnit]
         FOOT: _ClassVar[Length.LengthUnit]
+        ANGSTROM: _ClassVar[Length.LengthUnit]
     UNSPECIFIED: Length.LengthUnit
     CENTIMETER: Length.LengthUnit
     MILLIMETER: Length.LengthUnit
     METER: Length.LengthUnit
     INCH: Length.LengthUnit
     FOOT: Length.LengthUnit
+    ANGSTROM: Length.LengthUnit
     VALUE_FIELD_NUMBER: _ClassVar[int]
     PRECISION_FIELD_NUMBER: _ClassVar[int]
     UNITS_FIELD_NUMBER: _ClassVar[int]

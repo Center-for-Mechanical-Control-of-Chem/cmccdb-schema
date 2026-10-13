@@ -14,11 +14,12 @@
 """Creates a Dataset by enumerating a template with a spreadsheet.
 
 Usage:
-    construct_dataset.py --data=<str> --name=<str> --email=<str> [--dataset-name=<str> --output=<str> --no-validate --overwrite-ok]
+    construct_dataset.py --data=<str> --name=<str> --email=<str> [--dataset-name=<str> --fallback-dataset-name=<str> --output=<str> --no-validate --overwrite-ok]
 
 Options:
     --data=<str>            Path to a spreadsheet file with an appropriate template spec
     --dataset-name=<str>    Name of the Dataset
+    --fallback-dataset-name=<str>  Default name when neither an override nor workbook metadata supplies one
     --output=<str>          Filename for output Dataset
     --name=<str>            The user creating the Dataset
     --email=<str>           The email of the person creating the Dataset
@@ -80,6 +81,7 @@ def main(kwargs):
     dataset = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(
         filename,
         name=data_name,
+        default_name=kwargs.get('--fallback-dataset-name'),
         id=id,
         optional_fields={
             'record_created': {

@@ -999,6 +999,8 @@ message ProductCompound {
   // whether desired or undesired. Recovered starting materials can be
   // specified as REACTANT, REAGENT, CATALYST, etc. as appropriate.
   ReactionRole.ReactionRoleType reaction_role = 7;
+  // Source-supported crystal identity and cell parameters, as on input Compound.
+  optional CrystalParameters crystal_parameters = 100;
 }
 
 message ProductMeasurement {
@@ -1393,6 +1395,7 @@ message Length {
     METER = 3;
     INCH = 4;
     FOOT = 5;
+    ANGSTROM = 6;  // 1e-10 meter; primarily crystal cell parameters.
   }
   optional float value = 1;
   // Precision of the measurement (with the same units as `value`).
