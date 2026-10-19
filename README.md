@@ -2,6 +2,77 @@
 
 This repository contains the schema for the Mechanochemistry Reaction Database fork of the Open Reaction Database initiative
 
+## Dataset protobuf to CSV or Excel
+
+`cmccdb_schema.spreadsheet` owns both directions of the CSV/XLSX export round trip:
+protobuf-driven headers/rows, Dataset metadata, the packaged XLSX writer, and
+verification through the native `DatasetConstructor` importer. It does not
+require `cmccdb-data`, an extraction run, MCP, an LLM, or a database.
+
+```python
+from cmccdb_schema import message_helpers
+from cmccdb_schema.proto import dataset_pb2
+from cmccdb_schema.spreadsheet import export_dataset
+
+dataset = message_helpers.load_message("dataset.pb.gz", dataset_pb2.Dataset)
+receipt = export_dataset(dataset, "dataset.csv")  # Python only; no XLSX runtime
+```
+
+The same operation is available from the command line after installing this
+package:
+
+```bash
+cmccdb-export-spreadsheet dataset.pb.gz dataset.csv
+# Equivalent module invocation:
+python -m cmccdb_schema.scripts.export_spreadsheet dataset.pb.gz dataset.csv
+```
+
+The existing loader accepts `.pb`, `.pbtxt`, `.json` and their `.gz` forms. The
+Dataset must contain embedded reactions and stable, unique reaction IDs;
+reference-only `reaction_ids` datasets are rejected rather than resolved or
+silently omitted. Each export preserves the source message and checks all
+Dataset metadata and every populated Reaction field by ID. Grouping compatible headers
+may reorder rows. This checks transport fidelity, not scientific correctness.
+
+CSV uses Python's standard CSV writer and the native importer. It does not call
+Node, write an XLSX intermediary, or require Artifact Tool. `serialize_csv(dataset)`
+returns verified UTF-8 bytes for web downloads. CSV contains CMCCDB's hierarchical
+REACTION/VARIANTS/DATA blocks, rather than a flat reaction summary table.
+
+Optional `.xlsx` output (and the legacy `cmccdb-export-xlsx` command) uses the
+existing separately provisioned Node
+`@oai/artifact-tool` runtime. Set `CMCCDB_XLSX_NODE` (or pass `--node`) and
+`NODE_PATH` for that compatible runtime. Installing this Python package does
+not install Node or the artifact package. `spreadsheet_capabilities()` reports
+backend availability. Backend limits remain `CMCCDB_XLSX_HEAP_MIB` and
+`CMCCDB_XLSX_TIMEOUT_SECONDS`; invalid limits fail explicitly.
+
+The standalone workbook has one editable `ReactionData` sheet. CSV and XLSX
+exports carry a `DATASET ID` directive with the full ID in the following column,
+when the source has a dataset ID. Search-result datasets without an ID omit it;
+import assigns a fresh dataset ID. Reaction IDs use a `REACTION ID` VARIANTS
+header. Literal metadata comments carry name/description.
+`verify_round_trip(dataset, workbook)` reads identity from the exported file;
+it does not supply a replacement ID that could conceal a missing directive.
+See [spreadsheet metadata and identity](docs/spreadsheet-metadata.md) for import
+precedence and examples. Preserving identity does not enable database overwrites.
+
+Valueless optional message wrappers and entirely empty repeated-message fields
+may disappear during conversion. This does not discard populated scientific
+values. Empty oneof selections and empty positions in mixed repeated lists remain
+significant in verification; loss of those is rejected.
+No source text is silently trimmed. Values that cannot survive the existing
+converter or Excel limits fail export rather than being changed or truncated.
+An existing output is preserved by default; `--force`/`overwrite=True` replaces
+it only after the new file passes verification.
+
+The extraction harness calls this module for schema layout, writing and
+round-trip verification. Its evidence, review, figure annotations and attachment
+transport remain in `cmccdb-data`. Other applications can use the generic
+`reaction_sheet()`, `dataset_metadata_rows()`, `write_workbook()` and
+`verify_round_trip()` APIs to add their own presentation without implementing
+a second schema converter.
+
 ## Draft crystal structure compatibility change
 
 `Compound.crystal_parameters` remains tag 100. `ProductCompound` now supports the

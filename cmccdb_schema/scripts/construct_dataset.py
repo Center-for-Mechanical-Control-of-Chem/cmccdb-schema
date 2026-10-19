@@ -82,7 +82,7 @@ def main(kwargs):
         filename,
         name=data_name,
         default_name=kwargs.get('--fallback-dataset-name'),
-        id=id,
+        default_id=id,
         optional_fields={
             'record_created': {
                 "time": {"value": str(datetime.datetime.now())},

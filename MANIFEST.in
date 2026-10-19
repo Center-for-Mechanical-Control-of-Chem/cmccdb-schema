@@ -1,1 +1,2 @@
 include proto/*.proto
+include cmccdb_schema/write_workbook.mjs

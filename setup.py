@@ -20,7 +20,7 @@ with open("README.md") as f:
 
 setuptools.setup(
     name="cmccdb-schema",
-    version="0.3.80",
+    version="0.3.81",
     description="Schema for the CMCC Reaction Database",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -31,8 +31,13 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     packages=setuptools.find_packages(),
-    package_data={"cmccdb_schema.proto": ["*.pyi"],
+    package_data={"cmccdb_schema": ["write_workbook.mjs"],
+                  "cmccdb_schema.proto": ["*.pyi"],
                   "cmccdb_schema.orm": ["corpus_manifest.json", "testdata/*.pbtxt"]},
+    entry_points={"console_scripts": [
+        "cmccdb-export-xlsx=cmccdb_schema.scripts.export_spreadsheet:main",
+        "cmccdb-export-spreadsheet=cmccdb_schema.scripts.export_spreadsheet:main",
+    ]},
     python_requires=">=3.10",
     install_requires=[
         "docopt>=0.6.2",

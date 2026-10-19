@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv, os, sys
+import io
 import enum, dataclasses, uuid, collections
 import itertools
 import re
@@ -1457,6 +1458,7 @@ def json_hash(spec:dict|list|str):
         return bytestream_hash(fp)
 
 class DatasetBlocks(enum.Enum):
+    DATASET_ID = "DATASET ID"
     REACTION_BLOCK = "REACTION"
     VARIANTS_BLOCK = "VARIANTS"
     DATA_BLOCK = "DATA"
@@ -1508,7 +1510,9 @@ class DatasetConstructor:
         return json_hash(js)
 
     @classmethod
-    def from_iter(cls, iterable, extra_fields=None, optional_fields=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
+    def from_iter(cls, iterable, extra_fields=None, optional_fields=None,
+                  dataset_metadata=None) -> list[tuple[DatasetConstructor, np.ndarray]]:
+        metadata = {} if dataset_metadata is None else dataset_metadata
         blocks = []
         common = []
         variants = []
@@ -1520,7 +1524,17 @@ class DatasetConstructor:
                 row = [""]
             if row[0].startswith(DatasetBlocks.COMMENT.value):
                 continue
-            key = row[0].upper()
+            key = row[0].strip().upper()
+            if key == DatasetBlocks.DATASET_ID.value:
+                if len(row) < 2 or any(value.strip() for value in row[2:]):
+                    raise ValueError("DATASET ID needs the ID in the following column and no other values")
+                value = row[1].strip()
+                if not re.fullmatch(r"cmcc_dataset-[0-9a-f]{32}", value):
+                    raise ValueError("DATASET ID must be cmcc_dataset- followed by 32 lowercase hex characters")
+                if "dataset_id" in metadata and metadata["dataset_id"] != value:
+                    raise ValueError("Conflicting DATASET ID entries")
+                metadata["dataset_id"] = value
+                continue
             if key == DatasetBlocks.REACTION_BLOCK.value:
                 started = True
                 if active is None:
@@ -1616,7 +1630,7 @@ class DatasetConstructor:
                     try:
                         cls._collect_dataset_metadata(rows, metadata)
                         blocks.extend(cls.from_iter(rows, extra_fields=extra_fields,
-                                                    optional_fields=optional_fields))
+                                                    optional_fields=optional_fields, dataset_metadata=metadata))
                     except Exception as error:
                         raise ValueError(f"Worksheet {sheet.title}: {error}") from error
             finally:
@@ -1632,14 +1646,27 @@ class DatasetConstructor:
                 try:
                     cls._collect_dataset_metadata(data.values.tolist(), metadata)
                     blocks.extend(cls.from_iter(data.values, extra_fields=extra_fields,
-                                                optional_fields=optional_fields))
+                                                optional_fields=optional_fields, dataset_metadata=metadata))
                 except Exception as error:
                     raise ValueError(f"Worksheet {sheet_name}: {error}") from error
             return blocks
         else:
-            data = pd.read_csv(file_name_or_buffer, header=None, dtype=str, keep_default_na=False)
-        cls._collect_dataset_metadata(data.values.tolist(), metadata)
-        return cls.from_iter(data.values, extra_fields=extra_fields, optional_fields=optional_fields)
+            # CSV records can have different widths (e.g. a two-cell DATASET ID
+            # directive before a wide VARIANTS block). Pad after parsing, without
+            # pandas' first-record width inference or numeric/NA coercion.
+            if isinstance(file_name_or_buffer, (str, os.PathLike)):
+                with open(file_name_or_buffer, newline="", encoding="utf-8-sig") as stream:
+                    rows = list(csv.reader(stream))
+            else:
+                contents = file_name_or_buffer.read()
+                if isinstance(contents, bytes):
+                    contents = contents.decode("utf-8-sig")
+                rows = list(csv.reader(io.StringIO(contents)))
+            width = max((len(row) for row in rows), default=1)
+            rows = [row + [""] * (width - len(row)) for row in rows]
+            cls._collect_dataset_metadata(rows, metadata)
+            return cls.from_iter(rows, extra_fields=extra_fields, optional_fields=optional_fields,
+                                 dataset_metadata=metadata)
 
     @classmethod
     def _parse_csv_rows(cls, csv_rows):
@@ -1831,7 +1858,7 @@ class DatasetConstructor:
         try:
             ProtoMessage.default_constructable = True
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
-            nt_tree = cls.parse_csv_rows(common[:-1])
+            nt_tree = cls.parse_csv_rows(common[:-1]) if common else []
             common_paths = cls._insert_headers_in_column_order(rxn, nt_tree)
             ProtoMessage.default_constructable = False
 
@@ -1843,7 +1870,7 @@ class DatasetConstructor:
             remaining = [path for path in templater.template_paths if path not in common_paths]
             templater._paths = common_paths + remaining
             csv_data = cls.sanitize_csv_data(
-                [value for column, value in enumerate(common[-1])
+                [value for column, value in enumerate(common[-1] if common else [])
                  if value or any(column < len(header) and header[column].strip()
                                  for header in common[:-1])],
                 len(templater.template_paths), template=templater
@@ -1881,17 +1908,22 @@ class DatasetConstructor:
                               id=None,
                               extra_fields=None,
                               optional_fields=None,
-                              default_name=None
+                              default_name=None,
+                              default_id=None
                               ):
         from google.protobuf.json_format import ParseDict
         from .proto import dataset_pb2
 
-        if id is None:
-            id = str(uuid.uuid4()).replace("-", "")[:32]
-
         metadata = {}
         parser_data = cls.from_spreadsheet(file, extra_fields=extra_fields, optional_fields=optional_fields,
                                           dataset_metadata=metadata)
+        # Explicit API overrides win, then workbook identity, then the caller's
+        # fallback (the CLI's file hash), then a fresh ID for legacy sheets.
+        if id is None:
+            id = metadata.get("dataset_id", default_id)
+        if id is None:
+            id = uuid.uuid4().hex
+        id = id.removeprefix("cmcc_dataset-")
         if name is None:
             name = metadata.get("name", default_name if default_name is not None else
                                 os.path.splitext(os.path.basename(file))[0])
@@ -1918,6 +1950,10 @@ class DatasetConstructor:
                         reaction_id=stripped_missings.pop("reaction_id", None) or "cmcc-" + subid + templ.format(reaction_num)
                     )
                 )
+
+        reaction_ids = [proto["reaction_id"] for proto in protos]
+        if len(set(reaction_ids)) != len(reaction_ids):
+            raise ValueError("Duplicate REACTION ID entries, including generated IDs; each reaction needs a unique ID")
 
         return ParseDict(
             {
