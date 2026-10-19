@@ -6,13 +6,18 @@ the extraction harness, MCP, a database, or paper-specific evidence stores.
 import copy
 import csv
 import hashlib
+import io
 import json
+import mimetypes
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import zipfile
 from collections import OrderedDict
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from urllib.parse import urlsplit
 from google.protobuf import json_format
 from . import dataset_constructor
 from .proto import dataset_pb2, reaction_pb2
@@ -324,6 +329,11 @@ def verify_round_trip(dataset, workbook):
     if not ids or any(not value for value in ids) or len(set(ids)) != len(ids):
         raise ValueError("Spreadsheet verification requires nonempty, unique reaction IDs")
     actual = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(str(workbook))
+    _verify_dataset_values(original, actual)
+    return actual
+
+
+def _verify_dataset_values(original, actual):
     left, right = dataset_pb2.Dataset(), dataset_pb2.Dataset()
     left.CopyFrom(original); right.CopyFrom(actual)
     left.ClearField("reactions"); right.ClearField("reactions")
@@ -334,10 +344,167 @@ def verify_round_trip(dataset, workbook):
         or {r.reaction_id: _without_empty_messages(r) for r in original.reactions}
            != {r.reaction_id: _without_empty_messages(r) for r in actual.reactions}):
         raise SpreadsheetRoundTripError(actual)
-    return actual
 
 
-def _write_csv(dataset, output):
+def _data_locations(message, pointer=""):
+    """Visit Data fields with stable protobuf JSON-pointer paths, including maps."""
+    if message.DESCRIPTOR.full_name == "cmccdb.Data":
+        yield pointer, message
+        return
+    for field, value in message.ListFields():
+        if field.message_type is None:
+            continue
+        path = pointer + "/" + escaped(field.name)
+        if is_map(field):
+            if field.message_type.fields_by_name["value"].message_type:
+                for key in sorted(value):
+                    yield from _data_locations(value[key], path + "/" + escaped(key))
+        elif repeated(field):
+            for index, child in enumerate(value):
+                yield from _data_locations(child, path + "/" + str(index))
+        else:
+            yield from _data_locations(value, path)
+
+
+def _local_attachment(data):
+    if data.WhichOneof("kind") != "url":
+        return False
+    parts = urlsplit(data.url)
+    return not parts.scheme and not parts.netloc
+
+
+def _attachment_filename(data, pointer):
+    key = pointer.rsplit("/", 1)[-1].replace("~1", "/").replace("~0", "~")
+    if key.startswith("attachment:"):
+        name = key.removeprefix("attachment:")
+    elif data.WhichOneof("kind") == "url":
+        name = urlsplit(data.url).path
+    else:
+        suffix = mimetypes.guess_extension(data.format) if "/" in data.format else None
+        if not suffix and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,15}", data.format):
+            suffix = "." + data.format
+        name = "attachment" + (suffix or ".bin")
+    name = PurePosixPath(name.replace("\\", "/")).name
+    name = re.sub(r"[^\w.\-]", "_", name).strip(".")[:160]
+    return name or "attachment.bin"
+
+
+def serialize_csv_bundle(dataset, *, resolve_attachment=None):
+    """Return a verified ZIP of reactions.csv, manifest.json and attachment files.
+
+    Embedded bytes become relative Data.url references in the CSV. Local URLs
+    are read only through the caller's existing attachment resolver, accepting
+    (reaction_id, url) and returning bytes. Remote URLs remain links; no network
+    requests or arbitrary filesystem reads are performed here.
+    """
+    original = dataset_message(dataset)
+    projected = dataset_message(original)
+    portable = dataset_message(original)
+    files, references = {}, []
+    for index, reaction in enumerate(projected.reactions):
+        expected = dict(_data_locations(portable.reactions[index]))
+        for pointer, data in _data_locations(reaction):
+            kind = data.WhichOneof("kind")
+            if kind != "bytes_value" and not _local_attachment(data):
+                continue
+            original_url = data.url if kind == "url" else None
+            if kind == "bytes_value":
+                body = data.bytes_value
+            else:
+                if resolve_attachment is None:
+                    raise ValueError("A local attachment resolver is required for: " + data.url)
+                body = resolve_attachment(reaction.reaction_id, data.url)
+                if not isinstance(body, bytes):
+                    raise ValueError("Missing or unreadable local attachment: " + data.url)
+            digest = hashlib.sha256(body).hexdigest()
+            name = _attachment_filename(data, pointer)
+            member = "attachments/" + digest + "/" + name
+            files[member] = body
+            references.append(dict(reaction_id=reaction.reaction_id, path=pointer, file=member,
+                                   original_kind=kind, original_url=original_url,
+                                   sha256=digest, size=len(body)))
+            expected[pointer].bytes_value = body
+            data.url = member  # Protobuf oneof clears the embedded bytes.
+    csv_bytes = _serialize_csv(projected, bundle_references=True)
+    manifest = dict(format="cmccdb-csv-attachments-v1", csv="reactions.csv",
+                    csv_sha256=hashlib.sha256(csv_bytes).hexdigest(),
+                    dataset_id=original.dataset_id, attachments=references)
+    content = {"reactions.csv": csv_bytes, "manifest.json": (canonical(manifest) + "\n").encode("utf-8"), **files}
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        for name, body in sorted(content.items()):
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o100644 << 16
+            archive.writestr(info, body)
+    payload = output.getvalue()
+    _verify_dataset_values(portable, load_csv_bundle(payload))
+    return payload
+
+
+def load_csv_bundle(payload):
+    """Read this archive format without extracting paths; restore file bytes.
+
+    This native loader does not enable ZIP uploads in the web application.
+    Local URL attachments become portable embedded bytes; their original URLs
+    remain recorded in manifest.json. Dataset and reaction IDs are preserved.
+    """
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        infos = archive.infolist()
+        names = [info.filename for info in infos]
+        if len(names) != len(set(names)) or sum(info.file_size for info in infos) > 512 * 1024 * 1024:
+            raise ValueError("Duplicate archive members or CSV bundle exceeds 512 MiB uncompressed")
+        manifest = json.loads(archive.read("manifest.json"))
+        if manifest.get("format") != "cmccdb-csv-attachments-v1" or manifest.get("csv") != "reactions.csv":
+            raise ValueError("Unsupported CSV attachment bundle format")
+        csv_bytes = archive.read("reactions.csv")
+        if hashlib.sha256(csv_bytes).hexdigest() != manifest["csv_sha256"]:
+            raise ValueError("CSV checksum mismatch")
+        with tempfile.TemporaryDirectory(prefix="cmccdb-csv-bundle-") as temp:
+            source = Path(temp) / "reactions.csv"
+            source.write_bytes(csv_bytes)
+            actual = dataset_constructor.DatasetConstructor.enumerate_spreadsheet(str(source))
+        if manifest["dataset_id"]:
+            if actual.dataset_id != manifest["dataset_id"]:
+                raise ValueError("CSV dataset ID differs from the attachment manifest")
+        else:
+            actual.ClearField("dataset_id")
+        reaction_ids = [reaction.reaction_id for reaction in actual.reactions]
+        if not reaction_ids or any(not value for value in reaction_ids) or len(set(reaction_ids)) != len(reaction_ids):
+            raise ValueError("CSV bundle requires nonempty, unique reaction IDs")
+        locations = {(reaction.reaction_id, pointer): data for reaction in actual.reactions
+                     for pointer, data in _data_locations(reaction)}
+        used, members = set(), {"manifest.json", "reactions.csv"}
+        for reference in manifest["attachments"]:
+            member = reference["file"]
+            parts = PurePosixPath(member).parts
+            if (len(parts) != 3 or parts[0] != "attachments" or parts[-1] in {".", ".."}
+                    or not re.fullmatch("[0-9a-f]{64}", parts[1]) or "\\" in member
+                    or member != PurePosixPath(member).as_posix()):
+                raise ValueError("Invalid attachment archive path")
+            key = reference["reaction_id"], reference["path"]
+            data = locations.get(key)
+            if key in used or data is None or data.WhichOneof("kind") != "url" or data.url != member:
+                raise ValueError("Attachment reference does not match its CSV field")
+            body = archive.read(member)
+            if (len(body) != reference["size"] or hashlib.sha256(body).hexdigest() != reference["sha256"]
+                    or reference["sha256"] != parts[1]):
+                raise ValueError("Attachment checksum or size mismatch: " + member)
+            data.bytes_value = body
+            used.add(key); members.add(member)
+        if set(names) != members:
+            raise ValueError("Unlisted attachment archive members")
+        # No relative attachment links may be silently omitted from the bundle.
+        if any(_local_attachment(data) for data in locations.values()):
+            raise ValueError("Unresolved local attachment in CSV bundle")
+        return actual
+
+
+def _write_csv(dataset, output, *, bundle_references=False):
+    for reaction in dataset_message(dataset).reactions:
+        for _, data in _data_locations(reaction):
+            if data.WhichOneof("kind") == "bytes_value" or (_local_attachment(data) and not bundle_references):
+                raise ValueError("Attachments require a .zip export; use serialize_csv_bundle or a .zip output filename")
     rows = dataset_workbook_plan(dataset)["sheets"][0]["rows"]
     width = max(map(len, rows))
     with open(output, "w", encoding="utf-8", newline="") as stream:
@@ -346,17 +513,21 @@ def _write_csv(dataset, output):
 
 
 def serialize_csv(dataset):
-    """Return verified UTF-8 CSV bytes using Python only, with no XLSX backend."""
+    """Return plain CSV for records without local files; use ZIP for attachments."""
+    return _serialize_csv(dataset)
+
+
+def _serialize_csv(dataset, *, bundle_references=False):
     original = dataset_message(dataset)
     with tempfile.TemporaryDirectory(prefix="cmccdb-csv-") as temp:
         candidate = Path(temp) / "dataset.csv"
-        _write_csv(original, candidate)
+        _write_csv(original, candidate, bundle_references=bundle_references)
         verify_round_trip(original, candidate)
         return candidate.read_bytes()
 
 
-def export_dataset(dataset, output, *, node=None, overwrite=False):
-    """Export CSV or XLSX; publish only after a checked native round trip.
+def export_dataset(dataset, output, *, node=None, overwrite=False, resolve_attachment=None):
+    """Export CSV, ZIP with attachments, or XLSX after a checked round trip.
 
     Existing output files are preserved unless overwrite=True. Source messages
     are never mutated, whitespace is not silently trimmed, and no LLM/MCP or
@@ -365,17 +536,21 @@ def export_dataset(dataset, output, *, node=None, overwrite=False):
     original = dataset_message(dataset)
     output = Path(output).expanduser().absolute()
     suffix = output.suffix.lower()
-    if suffix not in {".csv", ".xlsx"}:
-        raise ValueError("Output filename must end in .csv or .xlsx")
+    if suffix not in {".csv", ".zip", ".xlsx"}:
+        raise ValueError("Output filename must end in .csv, .zip or .xlsx")
     if output.exists() and not overwrite:
         raise FileExistsError(output)
     with tempfile.TemporaryDirectory(prefix=".cmccdb-spreadsheet-", dir=output.parent) as temp:
         candidate = Path(temp) / ("dataset" + suffix)
-        if suffix == ".csv":
+        if suffix == ".zip":
+            candidate.write_bytes(serialize_csv_bundle(original, resolve_attachment=resolve_attachment))
+            actual = load_csv_bundle(candidate.read_bytes())
+        elif suffix == ".csv":
             _write_csv(original, candidate)
         else:
             write_workbook(dataset_workbook_plan(original), candidate, node=node)
-        actual = verify_round_trip(original, candidate)
+        if suffix != ".zip":
+            actual = verify_round_trip(original, candidate)
         digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
         if overwrite:
             os.replace(candidate, output)

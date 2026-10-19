@@ -132,7 +132,7 @@ class IdentityTests(unittest.TestCase):
 
 class CsvTests(unittest.TestCase):
     def test_native_csv_never_calls_xlsx_backend_and_preserves_populated_fields(self):
-        source = dataset(6)
+        source = dataset(2)  # Plain CSV has no file attachments; ZIP cases are tested separately.
         before = source.SerializeToString(deterministic=True)
         with patch.object(spreadsheet, "write_workbook", side_effect=AssertionError("No XLSX")), \
              patch.object(spreadsheet.subprocess, "run", side_effect=AssertionError("No subprocess")):

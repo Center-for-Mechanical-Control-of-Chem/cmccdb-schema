@@ -2,7 +2,7 @@
 
 This repository contains the schema for the Mechanochemistry Reaction Database fork of the Open Reaction Database initiative
 
-## Dataset protobuf to CSV or Excel
+## Dataset protobuf to CSV with attachment files, or Excel
 
 `cmccdb_schema.spreadsheet` owns both directions of the CSV/XLSX export round trip:
 protobuf-driven headers/rows, Dataset metadata, the packaged XLSX writer, and
@@ -15,16 +15,16 @@ from cmccdb_schema.proto import dataset_pb2
 from cmccdb_schema.spreadsheet import export_dataset
 
 dataset = message_helpers.load_message("dataset.pb.gz", dataset_pb2.Dataset)
-receipt = export_dataset(dataset, "dataset.csv")  # Python only; no XLSX runtime
+receipt = export_dataset(dataset, "dataset.zip")  # CSV + attachment files; Python only
 ```
 
 The same operation is available from the command line after installing this
 package:
 
 ```bash
-cmccdb-export-spreadsheet dataset.pb.gz dataset.csv
+cmccdb-export-spreadsheet dataset.pb.gz dataset.zip
 # Equivalent module invocation:
-python -m cmccdb_schema.scripts.export_spreadsheet dataset.pb.gz dataset.csv
+python -m cmccdb_schema.scripts.export_spreadsheet dataset.pb.gz dataset.zip
 ```
 
 The existing loader accepts `.pb`, `.pbtxt`, `.json` and their `.gz` forms. The
@@ -35,8 +35,31 @@ Dataset metadata and every populated Reaction field by ID. Grouping compatible h
 may reorder rows. This checks transport fidelity, not scientific correctness.
 
 CSV uses Python's standard CSV writer and the native importer. It does not call
-Node, write an XLSX intermediary, or require Artifact Tool. `serialize_csv(dataset)`
-returns verified UTF-8 bytes for web downloads. CSV contains CMCCDB's hierarchical
+Node, write an XLSX intermediary, or require Artifact Tool. Web CSV downloads use
+`serialize_csv_bundle(dataset)` and return a `.zip` containing:
+
+- `reactions.csv`, with relative file references instead of base64 attachment cells;
+- `attachments/<sha256>/<filename>`, preserving file bytes separately;
+- `manifest.json`, associating files with reaction IDs and schema field paths,
+  with sizes, checksums, original reference kinds and original local URLs.
+
+`load_csv_bundle(payload)` reads that format and restores attachment bytes to a
+portable Dataset. Each export verifies the CSV, file contents and reconstructed
+Dataset before publication. Hash directories prevent same-named files with
+different contents from colliding. Identical content/name pairs share one file.
+Source protobufs are never mutated. Standalone `.csv`/`serialize_csv(dataset)`
+is available for records without attachments and rejects embedded bytes or
+unresolved local files with instructions to use `.zip` instead.
+
+Local Data.url files require an explicit `resolve_attachment(reaction_id, url)`
+callback returning bytes. The web interface uses its existing file resolver,
+with each reaction's original dataset ID. Missing/ambiguous local files fail
+with a diagnostic; remote URLs remain links and are never downloaded.
+The standalone CLI supports embedded attachments; for local URL files use the
+Python API with an authorized resolver. Native ZIP loading does not add ZIP
+upload support to the web application.
+
+CSV contains CMCCDB's hierarchical
 REACTION/VARIANTS/DATA blocks, rather than a flat reaction summary table.
 
 Optional `.xlsx` output (and the legacy `cmccdb-export-xlsx` command) uses the

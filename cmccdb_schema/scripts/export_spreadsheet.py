@@ -1,4 +1,4 @@
-"""Export an embedded Dataset from .pb/.pbtxt/.json (optionally .gz) to CSV or XLSX."""
+"""Export a Dataset to CSV, a ZIP with separate attachment files, or XLSX."""
 import argparse
 import json
 from cmccdb_schema import message_helpers
@@ -9,7 +9,7 @@ from cmccdb_schema.spreadsheet import export_dataset
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", help="Dataset .pb, .pbtxt or .json file; .gz is supported")
-    parser.add_argument("output", help="Destination .csv (Python only) or .xlsx file")
+    parser.add_argument("output", help="Destination .zip (CSV + files), .csv (no attachments), or .xlsx file")
     parser.add_argument("--node", help="Node executable for the existing Artifact Tool XLSX backend")
     parser.add_argument("--force", action="store_true", help="Replace the output only after round-trip verification succeeds")
     args = parser.parse_args(argv)
