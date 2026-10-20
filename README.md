@@ -92,9 +92,18 @@ backend availability. Backend limits remain `CMCCDB_XLSX_HEAP_MIB` and
 
 The standalone workbook has one editable `ReactionData` sheet. CSV and XLSX
 exports carry a `DATASET ID` directive with the full ID in the following column,
-when the source has a dataset ID. Search-result datasets without an ID omit it;
+when the source has a dataset ID. This directive is the first row of standalone
+exports. Search-result datasets without an ID omit it;
 import assigns a fresh dataset ID. Reaction IDs use a `REACTION ID` VARIANTS
 header. Literal metadata comments carry name/description.
+
+Readable exports place values shared by every reaction in each layout block
+under `REACTION`, including `REACTION_TYPE`, common conditions and provenance.
+Only varying values and reaction IDs appear under `VARIANTS`. Repeated records
+share only an unchanged leading sequence; map entries move as whole records.
+This preserves ordering and the native importer's common/variant merge rules.
+Quantities with different values stay intact, including their inline units.
+Low-level canonical layouts retain their existing behavior.
 `verify_round_trip(dataset, workbook)` reads identity from the exported file;
 it does not supply a replacement ID that could conceal a missing directive.
 See [spreadsheet metadata and identity](docs/spreadsheet-metadata.md) for import

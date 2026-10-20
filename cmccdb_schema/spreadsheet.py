@@ -111,6 +111,82 @@ def common_provenance(reactions):
     return common if common["provenance"] else {}
 
 
+def split_common_reaction_values(reactions):
+    """Factor values that the native REACTION/VARIANTS merge can reconstruct.
+
+    Singular messages can share individual fields. Maps share complete entries;
+    repeated fields share only a prefix of complete records, since the importer
+    concatenates common and variant records. Records are never split/reordered.
+    Reaction identity always remains in VARIANTS, even for a one-row block.
+    """
+    variants = copy.deepcopy(reactions)
+
+    def split(desc, records):
+        common = {}
+        for field in desc.fields:
+            key = field.name
+            if (desc is reaction_pb2.Reaction.DESCRIPTOR and key == "reaction_id"
+                    or not all(key in record for record in records)):
+                continue
+            values = [record[key] for record in records]
+            if all(value == values[0] for value in values[1:]):
+                common[key] = copy.deepcopy(values[0])
+                for record in records:
+                    record.pop(key)
+            elif is_map(field):
+                entries = {entry: copy.deepcopy(value) for entry, value in values[0].items()
+                           if all(entry in other and other[entry] == value for other in values[1:])}
+                if entries:
+                    common[key] = entries
+                    for record in records:
+                        for entry in entries:
+                            record[key].pop(entry)
+                        if not record[key]:
+                            record.pop(key)
+            elif repeated(field):
+                prefix = []
+                for entries in zip(*values):
+                    if any(entry != entries[0] for entry in entries[1:]):
+                        break
+                    prefix.append(copy.deepcopy(entries[0]))
+                if prefix:
+                    common[key] = prefix
+                    for record in records:
+                        record[key] = record[key][len(prefix):]
+                        if not record[key]:
+                            record.pop(key)
+            elif (field.message_type and not repeated(field)
+                    and field.containing_oneof is None
+                    and "value" not in field.message_type.fields_by_name):
+                child = split(field.message_type, values)
+                if child:
+                    common[key] = child
+                    for record in records:
+                        if not record[key]:
+                            record.pop(key)
+        return common
+
+    return split(reaction_pb2.Reaction.DESCRIPTOR, variants), variants
+
+
+def _variant_source_paths(columns, common, variant):
+    """Keep source cell pointers when shared repeated records were prepended."""
+    for column in columns:
+        source, base, child = [], common, variant
+        for token in column["path"].split("/")[1:]:
+            key = token.replace("~1", "/").replace("~0", "~")
+            if isinstance(child, list):
+                index = int(key)
+                source.append(str(index + (len(base) if isinstance(base, list) else 0)))
+                base, child = None, child[index]
+            else:
+                source.append(token)
+                base = base.get(key) if isinstance(base, dict) else None
+                child = child.get(key) if isinstance(child, dict) else None
+        column["path"] = "/" + "/".join(source)
+    return columns
+
+
 def spreadsheet_rows(dataset, *, readable=False):
     """Build rows; readable=True uses the importer's human header grammar.
 
@@ -121,10 +197,8 @@ def spreadsheet_rows(dataset, *, readable=False):
     reactions = dataset.get("reactions", [])
     if not reactions:
         raise ValueError("Cannot export an empty extraction as reaction data")
-    common = common_provenance(reactions)
+    common = {} if readable else common_provenance(reactions)
     columns_for = readable_columns if readable else flatten
-    common_columns = columns_for(reaction_pb2.Reaction.DESCRIPTOR, common)
-    common_headers = header_rows(common_columns)
     blocks = OrderedDict()
     for reaction in reactions:
         variant = copy.deepcopy(reaction)
@@ -138,19 +212,36 @@ def spreadsheet_rows(dataset, *, readable=False):
         blocks.setdefault(key, dict(headers=headers, records=[]))["records"].append((reaction, columns))
     rows, data_cells, header_indices = [], [], []
     for block in blocks.values():
+        if readable:
+            common, variants = split_common_reaction_values([reaction for reaction, _ in block["records"]])
+            records = [(reaction, _variant_source_paths(
+                            columns_for(reaction_pb2.Reaction.DESCRIPTOR, variant), common, variant))
+                       for (reaction, _), variant in zip(block["records"], variants)]
+            variant_headers = header_rows(records[0][1])
+            if any(header_rows(columns) != variant_headers for _, columns in records[1:]):
+                raise ValueError("Common reaction values produced inconsistent variant headers")
+        else:
+            records, variant_headers = block["records"], block["headers"]
+        common_columns = columns_for(reaction_pb2.Reaction.DESCRIPTOR, common)
+        common_headers = header_rows(common_columns)
         rows.append(["REACTION"])
         header_indices.append(len(rows))
         if common_columns:
             header_indices += list(range(len(rows)+1, len(rows)+1+len(common_headers)))
             rows += [[""] + header for header in common_headers]
             rows.append([""] + [c["value"] for c in common_columns])
+            if readable:
+                for reaction, _ in records:
+                    for i, column in enumerate(common_columns, 2):
+                        data_cells.append(dict(reaction_id=reaction["reaction_id"], path=column["path"],
+                                               row=len(rows), column=i, value=column["value"]))
         rows.append(["VARIANTS"])
         header_indices.append(len(rows))
-        header_indices += list(range(len(rows)+1, len(rows)+1+len(block["headers"])))
-        rows += [[""] + header for header in block["headers"]]
+        header_indices += list(range(len(rows)+1, len(rows)+1+len(variant_headers)))
+        rows += [[""] + header for header in variant_headers]
         rows.append(["DATA"])
         header_indices.append(len(rows))
-        for reaction, columns in block["records"]:
+        for reaction, columns in records:
             rows.append([""] + [c["value"] for c in columns])
             for i, column in enumerate(columns, 2):
                 data_cells.append(dict(reaction_id=reaction["reaction_id"], path=column["path"],
@@ -239,7 +330,11 @@ def reaction_sheet(dataset, *, readable=False):
 def dataset_workbook_plan(dataset):
     """Build a plain, editable workbook without extraction-specific tabs."""
     sheet, cells = reaction_sheet(dataset, readable=True)
-    sheet["rows"].extend(dataset_metadata_rows(dataset))
+    metadata = dataset_metadata_rows(dataset)
+    sheet["rows"] = metadata + sheet["rows"]
+    sheet["header_rows"] = [row + len(metadata) for row in sheet["header_rows"]]
+    for cell in cells:
+        cell["row"] += len(metadata)
     return dict(sheets=[sheet], data_cells=cells)
 
 

@@ -67,6 +67,22 @@ across all blocks/worksheets, including collisions with generated IDs. Existing
 schema validation checks the `cmcc-` plus 32 lowercase hexadecimal convention.
 No existing reaction is updated automatically just because its ID is supplied.
 
+## Exported common values
+
+Standalone CSV/ZIP/XLSX exports put the optional `DATASET ID` directive first.
+Each human-readable reaction block moves shared fields (including identifiers
+such as `REACTION_TYPE`, conditions and provenance) into its `REACTION` section.
+Reaction IDs remain explicit columns under `VARIANTS`, even for one-row blocks.
+Repeated records are shared only as an identical leading sequence, and map
+entries are shared whole, so importing preserves ordering and record identity.
+Different values or fields absent from some rows stay in `VARIANTS`.
+
+The web search download retains the source dataset ID when every result belongs
+to the same known dataset. Mixed-dataset or unknown-origin searches omit the
+directive rather than claiming an incorrect identity. A source ID identifies
+the dataset containing the selected reactions; it does not claim that a search
+includes every reaction or automatically replace existing data on upload.
+
 The extraction harness writes these rows on Overview and compares actual parsed
 dataset metadata in its XLSX round-trip check. It does not restore a missing
 description after parsing. Use matching schema and harness revisions.

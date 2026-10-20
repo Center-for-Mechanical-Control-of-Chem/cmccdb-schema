@@ -213,20 +213,24 @@ class ProtoMessage:
             if isinstance(header, str):
                 msg = self.insert_field(header, optional=optional,
                                         explicit_children=index + 1 < len(subtree) and isinstance(subtree[index + 1], list))
-                if index + 1 == len(subtree) or not isinstance(subtree[index + 1], list):
+                if (normalize_key(header)[0] != "key"
+                        and (index + 1 == len(subtree) or not isinstance(subtree[index + 1], list))):
                     self.initialize_leaf_value(msg)
             else:
                 msg.insert_tree(header) # subtree
 
     @staticmethod
     def initialize_leaf_value(message):
-        """A value-message leaf such as Record Created / Time owns one cell."""
+        """A message leaf owns one value (or type) cell, never sibling defaults."""
         if isinstance(message, ProtoContainer) and ProtoHandler.is_message_type(message.type.value_type):
             message = message.get_default_message()
-        if isinstance(message, ProtoMessage) and "value" not in message.fields:
-            value_type = ProtoHandler.get_field_type(message.type, "value", raise_on_missing=False)
-            if value_type is not None:
-                message.fields["value"] = value_type
+        if isinstance(message, ProtoMessage):
+            for key in ("value", "type"):
+                value_type = ProtoHandler.get_field_type(message.type, key, raise_on_missing=False)
+                if value_type is not None:
+                    if key not in message.fields:
+                        message.fields[key] = value_type
+                    break
 
     @staticmethod
     def refine_header_fields(fields):
@@ -479,7 +483,8 @@ class ProtoContainer:
             if isinstance(header, str):
                 msg = self.insert_field(header, optional=optional,
                                         explicit_children=index + 1 < len(subtree) and isinstance(subtree[index + 1], list))
-                if index + 1 == len(subtree) or not isinstance(subtree[index + 1], list):
+                if (normalize_key(header)[0] != "key"
+                        and (index + 1 == len(subtree) or not isinstance(subtree[index + 1], list))):
                     ProtoMessage.initialize_leaf_value(msg)
             else:
                 msg.insert_tree(header, optional=optional) # subtree
@@ -562,6 +567,7 @@ class ProtoTemplater:
         self.spec = template_spec
         self.validator = validator
         self._paths = None
+        self._validation_paths = None
     @classmethod
     def from_proto(cls, proto:'ProtoContainer|ProtoMessage'):
         return cls(proto.to_template(), proto)
@@ -570,6 +576,11 @@ class ProtoTemplater:
         if self._paths is None:
             self._paths = self.get_template_paths(self.spec)
         return self._paths
+    @property
+    def validation_paths(self):
+        # A common repeated field is prepended in the merged output, while the
+        # validator still describes only VARIANTS. Keep its original indices.
+        return self.template_paths if self._validation_paths is None else self._validation_paths
     @classmethod
     def get_template_paths(cls, template):
         if isinstance(template, dict):
@@ -662,9 +673,13 @@ class ProtoTemplater:
         else:
             validator_tree = None
         modification_tree = {}
-        for path, val in zip(self.template_paths, values):
+        for path, validation_path, val in zip(self.template_paths, self.validation_paths, values):
             if validator_tree is not None:
                 vtree = validator_tree
+                for key in validation_path[:-1]:
+                    if key not in vtree["children"]:
+                        vtree["children"][key] = {"_value": vtree["_value"][key], "children": {}}
+                    vtree = vtree["children"][key]
             else:
                 vtree = None
             parent_tree = None
@@ -677,21 +692,13 @@ class ProtoTemplater:
                     mod_tree[p] = {}
                 if subtree[p] is base_tree[p]:
                     subtree[p] = subtree[p].copy()
-                if vtree is not None:
-                    if p not in vtree["children"]:
-                        subval = vtree["_value"][p]
-                        vtree["children"][p] = {
-                            "_value":subval,
-                            "children":{}
-                        }
-                    vtree = vtree["children"][p]
                 parent_tree = subtree
                 subtree = subtree[p]
                 base_tree = base_tree[p]
                 mod_tree = mod_tree[p]
 
             if vtree is not None:
-                valid, val = self.validate_value(vtree["_value"], path[-1], val)
+                valid, val = self.validate_value(vtree["_value"], validation_path[-1], val)
                 if not valid:
                     if isinstance(subtree, dict):
                         if (
@@ -1822,7 +1829,7 @@ class DatasetConstructor:
                 row = row[:-trailing_spaces]
         string_columns = set()
         if template is not None and template.validator is not None:
-            for column, path in enumerate(template.template_paths):
+            for column, path in enumerate(template.validation_paths):
                 parent = template.validator
                 for key in path[:-1]:
                     parent = parent[key]
@@ -1900,7 +1907,12 @@ class DatasetConstructor:
 
         cur_const = ProtoMessage.default_constructable
         try:
-            ProtoMessage.default_constructable = True
+            # Common and variant headers use the same grammar. Automatic
+            # construction on intermediate messages invents value/type columns
+            # in REACTION (e.g. a spare identifier before NAME, or an Analysis
+            # type before its Data children). Leaf headers create their own
+            # single slot explicitly in initialize_leaf_value().
+            ProtoMessage.default_constructable = False
             rxn = ProtoMessage(ProtoHandler.parallel_proto.Reaction)
             nt_tree = cls.parse_csv_rows(common[:-1]) if common else []
             common_paths = cls._insert_headers_in_column_order(rxn, nt_tree)
@@ -1937,6 +1949,7 @@ class DatasetConstructor:
         )
         templater._paths = [cls._merged_variant_path(path, base_template, var_template)
                            for path in variant_paths]
+        templater._validation_paths = variant_paths
         return templater
 
     @property
