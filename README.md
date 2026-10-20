@@ -62,6 +62,26 @@ upload support to the web application.
 CSV contains CMCCDB's hierarchical
 REACTION/VARIANTS/DATA blocks, rather than a flat reaction summary table.
 
+Standalone exports use the authored spreadsheet grammar: REACTANT/REAGENT/
+SOLVENT/CATALYST and PRODUCT group headings, NAME/SMILES/CSD identifier headings,
+inline units such as `Amount (mmol)` and `Frequency (Hz)`, `YIELD (%)`, and
+condition sections such as MECHANOCHEMISTRY. Provenance uses unambiguously
+resolved fields such as DOI, Publication URL and Record Created. Values and
+stored units are preserved without rescaling. Different roles, identifier types
+or units produce distinct header blocks.
+
+The exporter asks the native importer where a shorthand resolves before
+removing its containing path. Ambiguous fields keep enough context to identify
+their location; map keys and repeated-record boundaries are preserved. Explicit
+Value/Details and Value/Precision refinements preserve metadata alongside a
+typed or unit-bearing header. The matching importer fixes are required when
+re-importing these refinements.
+
+For annotated workbook consumers, low-level `spreadsheet_rows()` and
+`reaction_sheet()` retain their established cell-coordinate layout by default.
+Pass `readable=True` to those APIs to request the same human layout used by
+standalone CSV/ZIP/XLSX exports. The raw `flatten()` API is unchanged.
+
 Optional `.xlsx` output (and the legacy `cmccdb-export-xlsx` command) uses the
 existing separately provisioned Node
 `@oai/artifact-tool` runtime. Set `CMCCDB_XLSX_NODE` (or pass `--node`) and

@@ -168,7 +168,7 @@ class ProtoMessage:
         if field_name not in self.fields or isinstance(self.fields[field_name], ProtoType):
             self.fields[field_name] = ProtoContainer(subtype)
         return self.fields[field_name]
-    def insert_field(self, field_name, data=None, optional=False):
+    def insert_field(self, field_name, data=None, optional=False, explicit_children=False):
         try:
             field_name, units = normalize_key(field_name)
             key_path, fields = ProtoHandler.resolve_insertion_spot(ProtoType(None, self.type, None), field_name)
@@ -184,31 +184,67 @@ class ProtoMessage:
                 msg = msg[key_path[0]]
                 for m in key_path[1:]:
                     msg = msg[m]
-            if (len(key_path) == 1 and fields is None and field_name == key_path[0]
+            if (key_path and fields is None
                     and isinstance(msg, ProtoContainer)
                     and msg.type.container_type is not None
                     and ProtoHandler.is_message_type(msg.type.value_type)):
-                if field_name in self.explicit_repeated_headers:
+                header_path = tuple(key_path)
+                if header_path in self.explicit_repeated_headers:
                     msg.add_message(ProtoMessage(msg.type.value_type))
-                self.explicit_repeated_headers.add(field_name)
+                self.explicit_repeated_headers.add(header_path)
             if fields is not None:
                 if units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(fields, units)
                     ProtoMessage.update_field_dict(fields, unit_field, optional=optional)
+                if explicit_children:
+                    fields = self.refine_header_fields(fields)
                 msg.update(fields, optional=optional)
             elif units is not None:
                 unit_field = ProtoHandler.resolve_unit_message(msg, units)
+                if explicit_children:
+                    unit_field = self.refine_header_fields(unit_field)
                 msg.add_message(unit_field, allow_updates=True, optional=optional)
             return msg
         except Exception as e:
             raise ValueError(f"error in adding field {field_name}") from e
     def insert_tree(self, subtree, optional=False):
         msg = self
-        for header in subtree:
+        for index, header in enumerate(subtree):
             if isinstance(header, str):
-                msg = self.insert_field(header, optional=optional)
+                msg = self.insert_field(header, optional=optional,
+                                        explicit_children=index + 1 < len(subtree) and isinstance(subtree[index + 1], list))
+                if index + 1 == len(subtree) or not isinstance(subtree[index + 1], list):
+                    self.initialize_leaf_value(msg)
             else:
                 msg.insert_tree(header) # subtree
+
+    @staticmethod
+    def initialize_leaf_value(message):
+        """A value-message leaf such as Record Created / Time owns one cell."""
+        if isinstance(message, ProtoContainer) and ProtoHandler.is_message_type(message.type.value_type):
+            message = message.get_default_message()
+        if isinstance(message, ProtoMessage) and "value" not in message.fields:
+            value_type = ProtoHandler.get_field_type(message.type, "value", raise_on_missing=False)
+            if value_type is not None:
+                message.fields["value"] = value_type
+
+    @staticmethod
+    def refine_header_fields(fields):
+        """Explicit child columns replace a shorthand's implicit value slot.
+
+        Keep the shorthand's fixed type/units. Removing only freshly constructed
+        header defaults avoids creating a second identifier/quantity when the
+        children explicitly specify Value, Details or Precision.
+        """
+        if isinstance(fields, ProtoMessage):
+            fields.fields = ProtoMessage.refine_header_fields(fields.fields)
+        elif isinstance(fields, ProtoContainer):
+            for value in fields.values:
+                ProtoMessage.refine_header_fields(value)
+        elif isinstance(fields, dict):
+            fields = {key: ProtoMessage.refine_header_fields(value) for key, value in fields.items()
+                      if value is not Placeholders.TemplateParameter}
+        return fields
     def insert_dict(self, subtree, optional=False):
         for header,subtree in subtree.items():
             if isinstance(subtree, dict):
@@ -379,7 +415,7 @@ class ProtoContainer:
     def __getitem__(self, item):
         return self.get_field(item)
 
-    def insert_field(self, field_name, data=None, optional=False):
+    def insert_field(self, field_name, data=None, optional=False, explicit_children=False):
         try:
             field_name, units = normalize_key(field_name)
             if field_name == Placeholders.TemplateKey.value: # reserved for keys in maps
@@ -404,15 +440,16 @@ class ProtoContainer:
                 if (isinstance(msg, ProtoContainer) and msg.type.container_type is not None
                         and ProtoHandler.is_value_type(msg.type.value_type)):
                     msg.add_message(ProtoMessage(msg.type.value_type))
-                elif (len(key_path) == 1 and fields is None and field_name == key_path[0]
+                elif (key_path and fields is None
                       and isinstance(msg, ProtoContainer)
                       and msg.type.container_type is not None
                       and ProtoHandler.is_message_type(msg.type.value_type)):
                     # Each explicit repeated-message header starts a new element,
                     # even when its first child is itself a repeated field.
-                    if field_name in root.explicit_repeated_headers:
+                    header_path = tuple(key_path)
+                    if header_path in root.explicit_repeated_headers:
                         msg.add_message(ProtoMessage(msg.type.value_type))
-                    root.explicit_repeated_headers.add(field_name)
+                    root.explicit_repeated_headers.add(header_path)
                 if isinstance(msg.type, ProtoType) and msg.type.container_type is not None:
                     _ = msg.get_default_message()
                 if fields is not None:
@@ -423,9 +460,13 @@ class ProtoContainer:
                             unit_field,
                             optional=optional
                         )
+                    if explicit_children:
+                        fields = ProtoMessage.refine_header_fields(fields)
                     msg.update(fields, optional=optional)
                 elif units is not None:
                     unit_field = ProtoHandler.resolve_unit_message(msg, units)
+                    if explicit_children:
+                        unit_field = ProtoMessage.refine_header_fields(unit_field)
                     msg.add_message(unit_field, allow_updates=True, optional=optional)
                 elif ProtoMessage.default_constructable: #TODO: make this less hack-y (using as a global switch for now)
                     msg.default_construct()
@@ -434,9 +475,12 @@ class ProtoContainer:
             raise ValueError(f"error in adding field `{field_name}` to {self}") from e
     def insert_tree(self, subtree, optional=False):
         msg = self
-        for header in subtree:
+        for index, header in enumerate(subtree):
             if isinstance(header, str):
-                msg = self.insert_field(header, optional=optional)
+                msg = self.insert_field(header, optional=optional,
+                                        explicit_children=index + 1 < len(subtree) and isinstance(subtree[index + 1], list))
+                if index + 1 == len(subtree) or not isinstance(subtree[index + 1], list):
+                    ProtoMessage.initialize_leaf_value(msg)
             else:
                 msg.insert_tree(header, optional=optional) # subtree
     def insert_dict(self, subtree, optional=False):

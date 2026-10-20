@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 from google.protobuf import json_format
 from . import dataset_constructor
 from .proto import dataset_pb2, reaction_pb2
+from .spreadsheet_headers import readable_columns
 
 
 def canonical(value):
@@ -110,13 +111,19 @@ def common_provenance(reactions):
     return common if common["provenance"] else {}
 
 
-def spreadsheet_rows(dataset):
+def spreadsheet_rows(dataset, *, readable=False):
+    """Build rows; readable=True uses the importer's human header grammar.
+
+    The low-level default retains schema-path cell coordinates for existing
+    annotated-workbook consumers. Native standalone exports select readable.
+    """
     dataset = dataset_payload(dataset)
     reactions = dataset.get("reactions", [])
     if not reactions:
         raise ValueError("Cannot export an empty extraction as reaction data")
     common = common_provenance(reactions)
-    common_columns = flatten(reaction_pb2.Reaction.DESCRIPTOR, common)
+    columns_for = readable_columns if readable else flatten
+    common_columns = columns_for(reaction_pb2.Reaction.DESCRIPTOR, common)
     common_headers = header_rows(common_columns)
     blocks = OrderedDict()
     for reaction in reactions:
@@ -125,7 +132,7 @@ def spreadsheet_rows(dataset):
             variant["provenance"].pop(key)
         if "provenance" in variant and not variant["provenance"]:
             variant.pop("provenance")
-        columns = flatten(reaction_pb2.Reaction.DESCRIPTOR, variant)
+        columns = columns_for(reaction_pb2.Reaction.DESCRIPTOR, variant)
         headers = header_rows(columns)
         key = canonical(headers)
         blocks.setdefault(key, dict(headers=headers, records=[]))["records"].append((reaction, columns))
@@ -217,9 +224,9 @@ def dataset_metadata_rows(dataset):
                    for key in ("name", "description")]
 
 
-def reaction_sheet(dataset):
+def reaction_sheet(dataset, *, readable=False):
     """Return the native ReactionData sheet and schema-path cell coordinates."""
-    rows, cells, headers = spreadsheet_rows(dataset)
+    rows, cells, headers = spreadsheet_rows(dataset, readable=readable)
     widths = [14] + [20] * (max(map(len, rows)) - 1)
     for cell in cells:
         value = rows[cell["row"]-1][cell["column"]-1]
@@ -231,7 +238,7 @@ def reaction_sheet(dataset):
 
 def dataset_workbook_plan(dataset):
     """Build a plain, editable workbook without extraction-specific tabs."""
-    sheet, cells = reaction_sheet(dataset)
+    sheet, cells = reaction_sheet(dataset, readable=True)
     sheet["rows"].extend(dataset_metadata_rows(dataset))
     return dict(sheets=[sheet], data_cells=cells)
 
