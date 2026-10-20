@@ -125,7 +125,9 @@ def split_common_reaction_values(reactions):
         common = {}
         for field in desc.fields:
             key = field.name
-            if (desc is reaction_pb2.Reaction.DESCRIPTOR and key == "reaction_id"
+            if (desc is reaction_pb2.Reaction.DESCRIPTOR
+                    and (key in {"reaction_id", "inputs", "outcomes", "observations"}
+                         or key == "conditions" and len(reactions) == 1)
                     or not all(key in record for record in records)):
                 continue
             values = [record[key] for record in records]

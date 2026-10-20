@@ -97,13 +97,25 @@ exports. Search-result datasets without an ID omit it;
 import assigns a fresh dataset ID. Reaction IDs use a `REACTION ID` VARIANTS
 header. Literal metadata comments carry name/description.
 
-Readable exports place values shared by every reaction in each layout block
-under `REACTION`, including `REACTION_TYPE`, common conditions and provenance.
-Only varying values and reaction IDs appear under `VARIANTS`. Repeated records
+Readable exports place eligible values shared by every reaction in each layout
+block under `REACTION`, including `REACTION_TYPE` and provenance. Inputs,
+outcomes (including products), and observations always stay under `VARIANTS`.
+Conditions stay there too when a block contains just one reaction; conditions
+can be common only for blocks with multiple reactions. Repeated common records
 share only an unchanged leading sequence; map entries move as whole records.
 This preserves ordering and the native importer's common/variant merge rules.
 Quantities with different values stay intact, including their inline units.
 Low-level canonical layouts retain their existing behavior.
+
+Maps use their literal keys as column headers, rather than a Key column paired
+with String Value or Float Value columns. Data-valued entries declare their kind
+inline, e.g. `reported-mol {float}` or `label {string}`. A simple value is directly
+below its header. Entries with metadata use Value, Description and Format child
+columns. Structured maps (inputs, analyses) use key headers above the normal
+message columns. Quoted headers such as `["Key"]` preserve reserved names and
+punctuation. The importer also accepts simple untyped key headers and retains
+support for legacy Key/value columns. See the spreadsheet metadata documentation
+for examples and type rules.
 `verify_round_trip(dataset, workbook)` reads identity from the exported file;
 it does not supply a replacement ID that could conceal a missing directive.
 See [spreadsheet metadata and identity](docs/spreadsheet-metadata.md) for import

@@ -5,6 +5,7 @@ Shorthand is used only when the importer resolves it to the source field.
 """
 from dataclasses import dataclass, replace
 from functools import lru_cache
+import json
 from . import dataset_constructor as constructor, units
 from .proto import reaction_pb2
 
@@ -36,6 +37,38 @@ def _label(name):
 
 def _escaped(value):
     return str(value).replace("~", "~0").replace("/", "~1")
+
+
+def _map_key_label(value_field, key, kind=None):
+    """Keep literal keys in headers; quote grammar collisions without renaming."""
+    quoted = (not key or key != key.strip() or key.startswith("#!")
+              or any(char in key for char in ':()[]{}\n\r"')
+              or constructor.normalize_key(key)[0] == "key"
+              or kind is None and value_field.message_type is not None
+                 and _resolve(value_field.message_type, key) is not None)
+    label = json.dumps([key], ensure_ascii=False) if quoted else key
+    return label + (" {" + kind + "}" if kind else "")
+
+
+def _map_entry(field, value_field, key, entry, path):
+    desc = value_field.message_type
+    kind = None
+    if desc is not None and desc.full_name == "cmccdb.Data":
+        kind = next((name for name, member in constructor.DATA_COLUMN_KINDS.items() if member in entry), None)
+    label = _map_key_label(value_field, key, kind)
+    if desc is None:
+        return _Node(label, (key,), path, value=entry)
+    if set(entry) == {"value"}:
+        return _Node(label, (key,), path + "/value", value=entry["value"])
+    if kind:
+        member = constructor.DATA_COLUMN_KINDS[kind]
+        if set(entry) == {member}:
+            return _Node(label, (key,), path + "/" + member, value=entry[member])
+        children = [_Node("Value", (member,), path + "/" + member, value=entry[member])]
+        children.extend(_nodes(desc, entry, path, exclude={member}))
+    else:
+        children = _nodes(desc, entry, path)
+    return _Node(label, (key,), path, children=tuple(children))
 
 
 def _constant_fields(value):
@@ -161,15 +194,14 @@ def _nodes(desc, data, pointer="", exclude=()):
         value, path = data[field.name], pointer + "/" + _escaped(field.name)
         if field.message_type and field.message_type.GetOptions().map_entry:
             vf = field.message_type.fields_by_name["value"]
+            entries = []
             for key, entry in value.items():
                 child = path + "/" + _escaped(key)
-                children = [_Node("Key", ("@key",), child + "/@key", value=key)]
-                if vf.message_type:
-                    children.extend(_nodes(vf.message_type, entry, child))
-                else:
-                    children.append(_Node("Value", ("value",), child, value=entry))
-                node = _Node(_label(field.name), (field.name,), child, children=tuple(children), liftable=len(value) == 1)
-                result.extend(_compact(desc, node))
+                node = _map_entry(field, vf, key, entry, child)
+                if node.children is None or node.children:
+                    entries.append(node)
+            if entries:
+                result.append(_Node(_label(field.name), (field.name,), path, children=tuple(entries)))
         elif field.label == field.LABEL_REPEATED:
             for index, entry in enumerate(value):
                 child = path + "/" + str(index)

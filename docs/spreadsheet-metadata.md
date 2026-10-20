@@ -70,12 +70,58 @@ No existing reaction is updated automatically just because its ID is supplied.
 ## Exported common values
 
 Standalone CSV/ZIP/XLSX exports put the optional `DATASET ID` directive first.
-Each human-readable reaction block moves shared fields (including identifiers
-such as `REACTION_TYPE`, conditions and provenance) into its `REACTION` section.
+Each human-readable reaction block moves eligible shared fields (including
+identifiers such as `REACTION_TYPE` and provenance) into its `REACTION` section.
+Inputs, outcomes (including products) and observations always remain in
+`VARIANTS`, even when identical across rows. Conditions remain in `VARIANTS`
+for a one-reaction block, and can be shared for blocks with multiple reactions.
 Reaction IDs remain explicit columns under `VARIANTS`, even for one-row blocks.
 Repeated records are shared only as an identical leading sequence, and map
 entries are shared whole, so importing preserves ordering and record identity.
 Different values or fields absent from some rows stay in `VARIANTS`.
+
+## Maps as column headers
+
+Each map key can be a header, with its value in the data row beneath it. For
+example, `Features` → `reported-mol` with a data value of `10` imports a Data
+integer. Bare keys infer integer/float values from numeric cells, including
+scientific notation; other text stays text, including `NO` and `TRUE`.
+
+Exported Data entries use optional inline kinds to retain the exact protobuf
+choice: `{float}`, `{integer}`, `{string}`, `{url}` or `{bytes}`. Thus
+`reported-mol {float}` with `10.0` preserves a float, and `label {string}` with
+`00123` preserves literal text. Explicit string columns also preserve an empty
+string. URL values are literal URL text; bytes values are base64 text. The web
+CSV ZIP still transports binary attachments as separate files, using URL
+references in the CSV.
+
+An entry with description/format metadata uses child columns named `Value`,
+`Description` and `Format`; its key stays in the header. For example:
+
+```csv
+REACTION
+VARIANTS
+,INPUTS
+,reagents
+,REACTANT
+,Features
+,reported-mol {float},,label {string}
+,Value,Description
+DATA
+,10,Source loading,00123
+```
+
+Structured map values such as inputs and analyses use their key as a group
+header above their normal fields. Scalar maps use one column per key. All
+eight map fields reachable from Reaction support this grammar.
+
+Keys are case-sensitive and retain their exact spelling. To disambiguate a key
+that collides with a schema field or contains header punctuation, write a JSON
+array containing one string, e.g. `["Key"] {string}`, `["a:b"] {float}` or
+`[" key with boundary spaces "] {string}`. Empty keys use `[""]`. This quoting
+escapes only the header grammar and does not rename the key. Duplicate named
+keys in the same map are rejected. Legacy Key/String Value/Float Value columns
+continue to import for compatibility.
 
 The web search download retains the source dataset ID when every result belongs
 to the same known dataset. Mixed-dataset or unknown-origin searches omit the

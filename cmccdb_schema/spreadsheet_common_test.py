@@ -95,19 +95,25 @@ class SharedReactionTests(unittest.TestCase):
         self.assertEqual(len(common["identifiers"]), 1)
         self.assertEqual(common["identifiers"][0]["value"], "Shared")
         self.assertTrue(all(len(variant["identifiers"]) == 1 for variant in variants))
-        self.assertEqual(set(common["inputs"]), {"common"})
-        self.assertTrue(all(set(variant["inputs"]) == {"00123"} for variant in variants))
+        self.assertNotIn("inputs", common)
+        self.assertTrue(all(set(variant["inputs"]) == {"common", "00123"} for variant in variants))
         plan = self.round_trip(source)
         self.assertTrue(any(cell["path"] == "/identifiers/1/value" for cell in plan["data_cells"]))
 
-    def test_only_identity_varies_and_single_reaction_identity_stays_in_variants(self):
+    def test_entities_stay_in_variants_and_single_entry_conditions_stay_there_too(self):
         for count in (1, 2):
             with self.subTest(count=count):
                 source = dataset(count)
                 plan = self.round_trip(source)
                 rows = plan["sheets"][0]["rows"]
                 v = next(i for i, row in enumerate(rows) if row[0] == "VARIANTS")
-                self.assertEqual([value for value in rows[v + 1][1:] if value], ["REACTION ID"])
+                common = [value for row in rows[:v] for value in row]
+                variants = [value for row in rows[v:] for value in row]
+                for label in ("INPUTS", "REACTANT", "PRODUCT", "REACTION ID"):
+                    self.assertNotIn(label, common)
+                    self.assertIn(label, variants)
+                self.assertEqual("MECHANOCHEMISTRY" in variants, count == 1)
+                self.assertEqual("MECHANOCHEMISTRY" in common, count > 1)
 
     def test_idless_exports_omit_identity_directive_without_inventing_one(self):
         source = dataset(2)
